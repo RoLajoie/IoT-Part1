@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home IoT Dashboard</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- CSS Styling -->
+    <style>
+        /* General page styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Main container */
+        .dashboard-container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #1a73e8;
+            margin-bottom: 20px;
+        }
+
+        #led-status {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        /* Toggle switch styling */
+        .toggle-switch-container {
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .toggle-switch-label {
+            font-size: 1rem;
+            margin-right: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #1a73e8;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* LED image styling */
+        #light-image {
+            margin-top: 20px;
+            max-width: 100px;
+            transition: opacity 0.4s ease-in-out;
+        }
+
+        #light-image.lit {
+            opacity: 1;
+        }
+
+        #light-image.dark {
+            opacity: 0.5;
+        }
+
+        /* Footer */
+        footer {
+            font-size: 0.8rem;
+            color: #777;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <h1>Smart Home IoT Dashboard</h1>
+        
+        <!-- paragraph with var for the led status for the JS below -->
+        <p id="led-status">LED Status: {{ led_status }}</p>
+
+        <!-- switch for niceness -->
+        <div class="toggle-switch-container">
+            <span class="toggle-switch-label">Light Status:</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="toggle-switch" />
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <img id="light-image" src="/static/dark.png" alt="Light Status" class="dark">
+
+        <!-- Add your last names -->
+        <footer>
+            By: Rowan Lajoie, Maxim, Daniel 
+        </footer>
+    </div>
+
+    <script>
+        // variable for the initial state (set to "OFF" by default)
+        let ledStatus = "{{ led_status }}";
+        window.onload = function() {
+            //setting the image based on the variable value
+            if (ledStatus === 'ON') {
+                document.getElementById('toggle-switch').checked = true;
+                document.getElementById('light-image').src = '/static/lit.png';
+                document.getElementById('light-image').classList.add('lit');
+            } else {
+                document.getElementById('toggle-switch').checked = false;
+                document.getElementById('light-image').src = '/static/dark.png';
+                document.getElementById('light-image').classList.add('dark');
+            }
+        }
+
+        //if the toggle-switch is changed, check the state and change accordingly 
+        document.getElementById('toggle-switch').addEventListener('change', function() { 
+            let newState = this.checked ? 'ON' : 'OFF'; 
+            console.log("Sending new LED state:", newState); 
+
+            //ajax config 
+            $.ajax({
+                url: '/toggle_led',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ state: newState }),
+                success: function(response, status, xhr) {
+                    console.log("Status Code:", xhr.status); 
+                    console.log("Response LED state:", response.led_status);
+
+                    document.getElementById('led-status').textContent = "LED Status: " + response.led_status;
+
+                    if (response.led_status === 'ON') {
+                        document.getElementById('light-image').src = '/static/lit.png';
+                        document.getElementById('light-image').classList.remove('dark');
+                        document.getElementById('light-image').classList.add('lit');
+                    } else {
+                        document.getElementById('light-image').src = '/static/dark.png';
+                        document.getElementById('light-image').classList.remove('lit');
+                        document.getElementById('light-image').classList.add('dark');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Error occurred:", status, error);
+                    console.log("Status Code:", xhr.status);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
