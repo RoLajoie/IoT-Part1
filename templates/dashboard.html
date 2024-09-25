@@ -128,10 +128,10 @@
     <div class="dashboard-container">
         <h1>Smart Home IoT Dashboard</h1>
         
-        <!-- paragraph with var for the led status for the JS below -->
+        <!-- Displaying the dynamic LED status -->
         <p id="led-status">LED Status: {{ led_status }}</p>
 
-        <!-- switch for niceness -->
+        <!-- Toggle switch for controlling the LED -->
         <div class="toggle-switch-container">
             <span class="toggle-switch-label">Light Status:</span>
             <label class="toggle-switch">
@@ -140,63 +140,52 @@
             </label>
         </div>
 
+        <!-- Light status image -->
         <img id="light-image" src="/static/dark.png" alt="Light Status" class="dark">
 
-        <!-- Add your last names -->
+        <!-- Footer -->
         <footer>
             By: Rowan Lajoie, Maxim Rotaru, Daniel Levitin
         </footer>
     </div>
 
     <script>
-        // variable for the initial state (set to "OFF" by default)
+        
+        //LED status passed from the backend
         let ledStatus = "{{ led_status }}";
-        window.onload = function() {
-            //setting the image based on the variable value
-            if (ledStatus === 'ON') {
-                document.getElementById('toggle-switch').checked = true;
-                document.getElementById('light-image').src = '/static/lit.png';
-                document.getElementById('light-image').classList.add('lit');
-            } else {
-                document.getElementById('toggle-switch').checked = false;
-                document.getElementById('light-image').src = '/static/dark.png';
-                document.getElementById('light-image').classList.add('dark');
-            }
-        }
 
-        //if the toggle-switch is changed, check the state and change accordingly 
-        document.getElementById('toggle-switch').addEventListener('change', function() { 
-            let newState = this.checked ? 'ON' : 'OFF'; 
-            console.log("Sending new LED state:", newState); 
+        //updates UI when the page loads
+        window.onload = () => updateUI(ledStatus);
 
-            //ajax config 
-            $.ajax({
-                url: '/toggle_led',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ state: newState }),
-                success: function(response, status, xhr) {
-                    console.log("Status Code:", xhr.status); 
-                    console.log("Response LED state:", response.led_status);
+        //event listener for the toggle switch
+        document.getElementById('toggle-switch').addEventListener('change', function() {
+            let newState = this.checked ? 'ON' : 'OFF';
 
-                    document.getElementById('led-status').textContent = "LED Status: " + response.led_status;
-
-                    if (response.led_status === 'ON') {
-                        document.getElementById('light-image').src = '/static/lit.png';
-                        document.getElementById('light-image').classList.remove('dark');
-                        document.getElementById('light-image').classList.add('lit');
-                    } else {
-                        document.getElementById('light-image').src = '/static/dark.png';
-                        document.getElementById('light-image').classList.remove('lit');
-                        document.getElementById('light-image').classList.add('dark');
-                    }
+            //send state to backend through POST 
+            fetch('/toggle_led', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
                 },
-                error: function(xhr, status, error) {
-                    console.error("Error occurred:", status, error);
-                    console.log("Status Code:", xhr.status);
-                }
+                body: JSON.stringify({ state: newState })
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateUI(data.led_status); 
             });
         });
+
+        //updating UI based on the LED status
+        function updateUI(status) {
+            const lightImage = document.getElementById('light-image');
+            const toggleSwitch = document.getElementById('toggle-switch');
+
+            //update the switch and image based on the status
+            toggleSwitch.checked = (status === 'ON');
+            lightImage.src = status === 'ON' ? '/static/lit.png' : '/static/dark.png';
+            document.getElementById('led-status').textContent = "LED Status: " + status;
+            lightImage.className = status === 'ON' ? 'lit' : 'dark';
+        }
     </script>
 </body>
 </html>
