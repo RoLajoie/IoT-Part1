@@ -1,5 +1,6 @@
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 from flask import Flask, request, jsonify, render_template
+import atexit
 
 # pip install flask
 
@@ -9,9 +10,15 @@ app = Flask(__name__)
 LED_PIN = 12 # pin num
 led_state = 'OFF'
 #config
-#GPIO.setmode(GPIO.BCM)
-#GPIO.setup(LED_PIN, GPIO.OUT)
-#GPIO.output(LED_PIN, GPIO.LOW)
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(LED_PIN, GPIO.OUT)
+GPIO.output(LED_PIN, GPIO.LOW)
+
+def on_exit():
+    print("FLASK SHUTTING DOWN...")
+    GPIO.output(LED_PIN, GPIO.LOW)
+
+atexit.register(on_exit)
 
 @app.route('/')
 def index():
@@ -28,10 +35,10 @@ def toggle_led():
 
     #update the physical LED 
     if new_state == 'ON':
-        # GPIO.output(LED_PIN, GPIO.HIGH)
+        GPIO.output(LED_PIN, GPIO.HIGH)
         print("Physical LED turned ON")
     else:
-        # GPIO.output(LED_PIN, GPIO.LOW)
+        GPIO.output(LED_PIN, GPIO.LOW)
         print("Physical LED turned OFF")
 
     #update state variable
@@ -41,4 +48,7 @@ def toggle_led():
     return jsonify({'led_status': new_state}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    try:
+        app.run(debug=True)
+    except KeyboardInterrupt:
+        print("Exiting...")
