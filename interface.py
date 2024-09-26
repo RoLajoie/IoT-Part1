@@ -14,10 +14,11 @@ GPIO.setmode(GPIO.BCM)
 GPIO.setup(LED_PIN, GPIO.OUT)
 GPIO.output(LED_PIN, GPIO.LOW)
 
+#runs the function when its shutting down
 def on_exit():
-    print("FLASK SHUTTING DOWN...")
     GPIO.output(LED_PIN, GPIO.LOW)
 
+#remembers to call the function at exit
 atexit.register(on_exit)
 
 @app.route('/')
@@ -48,6 +49,7 @@ def toggle_led():
     return jsonify({'led_status': new_state}), 200
 
 if __name__ == '__main__':
+    #checks if flask is being exited
     try:
         app.run(debug=True)
     except KeyboardInterrupt:
