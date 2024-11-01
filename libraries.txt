@@ -1,0 +1,68 @@
+
+# Required Libraries for IoT Dashboard with DHT-11 Sensor and MQTT
+
+## Libraries
+
+You can install the required libraries using the commands below:
+
+```bash
+# General Raspberry Pi GPIO library
+sudo apt-get install python3-rpi.gpio
+
+# Adafruit DHT library for sensor data
+sudo pip3 install Adafruit_DHT
+
+# Flask for web interface
+sudo pip3 install Flask
+
+# Paho MQTT for MQTT communication
+sudo pip3 install paho-mqtt
+
+# GPIO Zero library (alternative GPIO library)
+sudo apt-get install python3-gpiozero
+
+# SMTPLib (included in Python's standard library for email functionality)
+```
+
+## Configuration Steps
+
+1. **Verify System and Python Version**:
+   Ensure you are running on a Raspberry Pi with Python 3.x installed. Run the following to check the Python version:
+   
+   ```bash
+   python3 --version
+   ```
+
+2. **Enable GPIO**:
+   On Raspberry Pi, enable GPIO pins by running `sudo raspi-config`, navigate to `Interface Options`, and enable `GPIO`.
+
+3. **Install Required Libraries**:
+   Run each of the commands above in the terminal to install the required libraries.
+
+4. **Setting Up MQTT Broker (Optional)**:
+   If you don’t have an MQTT broker, you can install Mosquitto on the Raspberry Pi as a broker for local MQTT communication:
+
+   ```bash
+   sudo apt-get install mosquitto mosquitto-clients
+   ```
+
+   Start the broker:
+   ```bash
+   sudo systemctl enable mosquitto
+   sudo systemctl start mosquitto
+   ```
+
+5. **Running the Flask Application**:
+   Run the Flask application with the following command:
+
+   ```bash
+   python3 interfaceMQTT.py
+   ```
+
+6. **Troubleshooting**:
+   If you encounter the "Unknown platform" error with Adafruit_DHT, try installing Python 3.9 or using the `gpiozero` library as an alternative.
+
+7. **Testing Setup**:
+   Once configured, you can test the DHT sensor readings and MQTT communication by navigating to the IoT dashboard in a web browser and toggling the LED and fan.
+
+Refer to this guide for additional troubleshooting or library updates as needed.
