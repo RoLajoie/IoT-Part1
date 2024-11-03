@@ -32,7 +32,6 @@ GPIO.setup(FAN_POWER_PIN, GPIO.OUT)
 GPIO.output(LED_PIN, GPIO.LOW)
 GPIO.output(FAN_PIN, GPIO.LOW)
 GPIO.output(FAN_POWER_PIN, GPIO.HIGH)
-# GPIO.output(FAN_PIN, GPIO.HIGH)
 
 # Initialize DHT sensor
 dht_sensor = DHT(DHT_PIN)
@@ -133,10 +132,10 @@ def monitor_temperature():
         humidity, temperature = read_dht_sensor()
         if temperature is not None:
             print(f"Temperature: {temperature}°C, Humidity: {humidity}%")
-            if temperature > 24 and fan_state == 'OFF':
+            if temperature >= 24 and fan_state == 'OFF':
                 fan_state = 'ON' 
                 send_email(temperature)
-            elif temperature <= 24 and fan_state == 'ON':
+            elif temperature < 24 and fan_state == 'ON':
                 fan_state = 'OFF'
                 GPIO.output(FAN_PIN, GPIO.LOW)
         time.sleep(3)
@@ -174,16 +173,15 @@ def on_exit():
     GPIO.output(FAN_PIN, GPIO.LOW)
     GPIO.cleanup()
 
-#@app.route('/sensor_data')
-#def sensor_data():
-#    humidity, temperature = read_dht_sensor()  # Call your DHT sensor function
-#    if humidity is not None and temperature is not None:
-#        return jsonify({'temperature': temperature, 'humidity': humidity})
-#    else:
-#        return jsonify({'error': 'Could not retrieve sensor data'}), 500
-
+@app.route('/sensor_data')
+def sensor_data():
+    humidity, temperature = read_dht_sensor()  # Call your DHT sensor function
+    if humidity is not None and temperature is not None:
+        return jsonify({'temperature': temperature, 'humidity': humidity})
+    else:
+        return jsonify({'error': 'Could not retrieve sensor data'}), 500
 
 atexit.register(on_exit)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
