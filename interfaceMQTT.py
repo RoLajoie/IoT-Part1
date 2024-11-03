@@ -20,6 +20,7 @@ FAN_POWER_PIN = 18    # Fan (DC motor) control pin
 FAN_PIN = 26    # Fan (DC motor) control pin
 DHT_PIN = 13     # DHT-11 sensor pin
 
+GPIO.setwarnings(False) #disable warnings
 # Set up GPIO for LED and Fan
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(LED_PIN, GPIO.OUT)
@@ -120,7 +121,8 @@ def read_dht_sensor():
         temperature = dht_sensor.getTemperature()
         return humidity, temperature
     else:
-        print("Failed to retrieve data from DHT sensor")
+        #PRINT THIS IF NEEDED
+        #print("Failed to retrieve data from DHT sensor")
         return None, None
 
 
@@ -172,13 +174,13 @@ def on_exit():
     GPIO.output(FAN_PIN, GPIO.LOW)
     GPIO.cleanup()
 
-@app.route('/sensor_data')
-def sensor_data():
-    humidity, temperature = read_dht_sensor()  # Call your DHT sensor function
-    if humidity is not None and temperature is not None:
-        return jsonify({'temperature': temperature, 'humidity': humidity})
-    else:
-        return jsonify({'error': 'Could not retrieve sensor data'}), 500
+#@app.route('/sensor_data')
+#def sensor_data():
+#    humidity, temperature = read_dht_sensor()  # Call your DHT sensor function
+#    if humidity is not None and temperature is not None:
+#        return jsonify({'temperature': temperature, 'humidity': humidity})
+#    else:
+#        return jsonify({'error': 'Could not retrieve sensor data'}), 500
 
 
 atexit.register(on_exit)
