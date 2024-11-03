@@ -8,7 +8,7 @@
 import time
 from Freenove_DHT import DHT      
 
-DHTPin = 17     #define the pin of DHT11
+DHTPin = 13     #define the pin of DHT11
 
 def loop():
     dht = DHT(DHTPin)

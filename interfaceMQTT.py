@@ -8,23 +8,35 @@ import smtplib
 from email.mime.text import MIMEText
 from threading import Thread
 import time
+import ssl
+from email.message import EmailMessage
+import imaplib
+import email
+from email.header import decode_header
 
 # Define pin assignments
 LED_PIN = 12    # LED control pin
-FAN_PIN = 18    # Fan (DC motor) control pin
-DHT_PIN = 6     # DHT-11 sensor pin
+FAN_POWER_PIN = 18    # Fan (DC motor) control pin
+FAN_PIN = 26    # Fan (DC motor) control pin
+DHT_PIN = 13     # DHT-11 sensor pin
 
 # Set up GPIO for LED and Fan
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(LED_PIN, GPIO.OUT)
 GPIO.setup(FAN_PIN, GPIO.OUT)
+GPIO.setup(FAN_POWER_PIN, GPIO.OUT)
 
 # Turn off LED and fan by default
+
 GPIO.output(LED_PIN, GPIO.LOW)
 GPIO.output(FAN_PIN, GPIO.LOW)
+GPIO.output(FAN_POWER_PIN, GPIO.HIGH)
+# GPIO.output(FAN_PIN, GPIO.HIGH)
 
 # Initialize DHT sensor
 dht_sensor = DHT(DHT_PIN)
+
+
 
 # MQTT configuration
 MQTT_BROKER = 'localhost'  # Replace with broker IP if needed
@@ -36,19 +48,65 @@ fan_state = 'OFF'
 def send_email(temperature):
     msg = MIMEText(f"The current temperature is {temperature}°C. Would you like to turn on the fan?")
     msg['Subject'] = 'Temperature Alert'
-    msg['From'] = 'your_email@example.com'
-    msg['To'] = 'recipient_email@example.com'
+    msg['From'] = 'whatisiot1@gmail.com'
+    msg['To'] = 'Maximrotaru16@gmail.com'
     
-    with smtplib.SMTP('smtp.example.com', 587) as server:
+    with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.starttls()
-        server.login('your_email@example.com', 'your_password')
+        server.login('whatisiot1@gmail.com', 'ayvi plyw mqzd vrtz')
         server.sendmail(msg['From'], [msg['To']], msg.as_string())
     print('Email sent')
+    
+# Function to check email responses and control LED
+def check_email_responses():
+    while True:
+        try:
+            # Login to your account
+            mail = imaplib.IMAP4_SSL("imap.gmail.com")
+            mail.login(username, imap_password)
+            mail.select("inbox")
+
+            # Search for emails with "Re:" in the subject
+            status, messages = mail.search(None, 'SUBJECT "Re:"')
+            email_ids = messages[0].split()
+
+            # Fetch and process each reply
+            for email_id in email_ids:
+                res, msg_data = mail.fetch(email_id, "(RFC822)")
+                msg = email.message_from_bytes(msg_data[0][1])
+                
+                # Decode subject
+                subject, encoding = decode_header(msg["Subject"])[0]
+                if isinstance(subject, bytes):
+                    subject = subject.decode(encoding if encoding else 'utf-8')
+
+                # Check for "Yes" in the subject
+                if "Yes" in subject:
+                    print("Yes detected in response, activating FAN")
+                    mail.store(email_id, '+FLAGS', '\\Deleted')
+                    mail.expunge()
+                    GPIO.output(FAN_PIN, GPIO.HIGH)
+
+            # Logout and clean up
+            mail.logout()
+            time.sleep(10)  # Check every 10 seconds
+
+        except Exception as e:
+            print(f"Error checking emails: {e}")
 
 # MQTT setup
 mqtt_client = mqtt.Client()
 mqtt_client.connect(MQTT_BROKER, 1883, 60)
 mqtt_client.loop_start()
+
+# Email configuration for sending alerts
+port = 465
+app_specific_password = "ayvi plyw mqzd vrtz"
+email_sent = False
+
+# Email configuration for checking responses
+username = "whatisiot1@gmail.com"
+imap_password = "ayvi plyw mqzd vrtz"
 
 # Flask setup
 app = Flask(__name__)
@@ -73,17 +131,18 @@ def monitor_temperature():
         humidity, temperature = read_dht_sensor()
         if temperature is not None:
             print(f"Temperature: {temperature}°C, Humidity: {humidity}%")
-            if temperature > 24:
+            if temperature > 24 and fan_state == 'OFF':
+                fan_state = 'ON' 
                 send_email(temperature)
-                fan_state = 'ON'
-                GPIO.output(FAN_PIN, GPIO.HIGH)
-            else:
+            elif temperature <= 24 and fan_state == 'ON':
                 fan_state = 'OFF'
                 GPIO.output(FAN_PIN, GPIO.LOW)
-        time.sleep(10)
+        time.sleep(3)
 
 # Start monitoring thread
 Thread(target=monitor_temperature, daemon=True).start()
+# Check email response thread
+Thread(target=check_email_responses, daemon=True).start()
 
 # Route to render the dashboard
 @app.route('/')
