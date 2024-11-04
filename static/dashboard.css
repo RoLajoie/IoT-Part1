@@ -1,0 +1,125 @@
+/* General styling */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #f4f4f9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #333;
+}
+
+.dashboard-container {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 500px;
+    padding: 20px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 24px;
+    color: #4a4a8f;
+    margin-bottom: 20px;
+}
+
+/* Display status labels */
+.data-container, .toggle-switch-container {
+    margin-bottom: 15px;
+}
+
+.data-display {
+    font-size: 18px;
+    color: #555;
+    margin: 10px 0;
+}
+
+#led-status, #fan-status {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+/* Icons styling */
+img {
+    width: 40px;
+    height: 40px;
+    vertical-align: middle;
+    margin-left: 10px;
+}
+
+img.lit {
+    filter: brightness(1.5);
+}
+
+img.dark {
+    opacity: 0.5;
+}
+
+/* Toggle switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 28px;
+    margin-left: 10px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 28px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4a8f4a;
+}
+
+input:checked + .slider:before {
+    transform: translateX(32px);
+}
+
+/* Footer */
+footer {
+    font-size: 12px;
+    color: #777;
+    margin-top: 20px;
+}
+
+/* Temperature & Humidity icons */
+img#temp-icon, img#humidity-icon {
+    width: 30px;
+    height: 30px;
+    vertical-align: middle;
+}

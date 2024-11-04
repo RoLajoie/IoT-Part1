@@ -42,7 +42,8 @@ dht_sensor = DHT(DHT_PIN)
 
 # MQTT configuration
 MQTT_BROKER = 'localhost'  # Replace with broker IP if needed
-MQTT_TOPIC = 'home/led'
+MQTT_TOPIC_LED = 'home/led'
+MQTT_TOPIC_FAN = 'home/fan'
 led_state = 'OFF'
 fan_state = 'OFF'
 
@@ -51,7 +52,8 @@ def send_email(temperature):
     msg = MIMEText(f"The current temperature is {temperature}°C. Would you like to turn on the fan?")
     msg['Subject'] = 'Temperature Alert'
     msg['From'] = 'whatisiot1@gmail.com'
-    msg['To'] = 'Maximrotaru16@gmail.com'
+    # msg['To'] = 'Maximrotaru16@gmail.com'
+    msg['To'] = 'levitind@gmail.com'
     
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.starttls()
@@ -157,23 +159,28 @@ def index():
 def toggle_led(state):
     global led_state
     led_state = state
-    mqtt_client.publish(MQTT_TOPIC, state)
-    GPIO.output(LED_PIN, GPIO.HIGH if state == 'ON' else GPIO.LOW)
-    return jsonify({'led_status': led_state, 'fan_status': fan_state}), 200
+    print(f"LED state set to: {led_state}") # Debugging purposes
+    mqtt_client.publish(MQTT_TOPIC_LED, led_state)
+    GPIO.output(LED_PIN, GPIO.HIGH if led_state == 'ON' else GPIO.LOW)
+    return jsonify({'led_status': led_state}), 200
 
-# Route to control fan directly
+# Route to control fan via MQTT
 @app.route('/toggle_fan/<state>', methods=['POST'])
 def toggle_fan(state):
     global fan_state
     fan_state = state
-    GPIO.output(FAN_PIN, GPIO.HIGH if state == 'ON' else GPIO.LOW)
-    return jsonify({'led_status': led_state, 'fan_status': fan_state}), 200
+    print(f"Fan state set to: {fan_state}") # Debugging purposes
+    mqtt_client.publish(MQTT_TOPIC_FAN, fan_state)
+    GPIO.output(FAN_PIN, GPIO.HIGH if fan_state == 'ON' else GPIO.LOW)
+    return jsonify({'fan_status': fan_state}), 200
 
 # Handle app exit to ensure GPIO is cleaned up
 def on_exit():
     GPIO.output(LED_PIN, GPIO.LOW)
     GPIO.output(FAN_PIN, GPIO.LOW)
     GPIO.cleanup()
+    mqtt_client.publish(MQTT_TOPIC_LED, 'OFF')
+    mqtt_client.publish(MQTT_TOPIC_FAN, 'OFF')
 
 @app.route('/sensor_data')
 def sensor_data():
