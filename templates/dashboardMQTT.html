@@ -35,8 +35,9 @@
             <!-- Humidity level icon -->
             <img id="humidity-icon" src="/static/humidity-mid.webp" alt="Humidity Level" class="mid">
 
-            <!-- Fan status image -->
             <p id="fan-status">Fan Status: {{ fan_status }}</p>
+            <!-- Fan status image -->
+            <img id="fan-icon" src="/static/fan-off.webp" alt="Fan Status" class="off">
         </div>
         
         <footer>
@@ -92,27 +93,26 @@
                             humidityIcon.src = '/static/humidity-high.webp';
                         }
 
-                        // Check if the fan should be toggled
+                        // Check if the fan should be toggled ON
                         if (data.temperature >= 24 && "{{ fan_status }}" === 'OFF') {
-                            sendFanAlert(data.temperature);
+                            // Check email replies first
+                            /*
+                                let newFanState = ("{{ fan_status }}" === 'OFF') ? 'ON' : 'OFF';
+                                fetch(`/toggle_fan/${newFanState}`, { method: 'POST' });
+                                updateFan(newFanState);
+                            */
+                            updateFan('ON');
                         }
                     }
                 })
                 .catch(error => console.error('Error fetching sensor data:', error));
         }
 
-        function sendFanAlert(temp) {
-            alert(`The current temperature is ${temp}°C. Turn on the fan?`);
-            if (confirm("Turn on fan?")) {
-                fetch('/toggle_fan/ON', { method: 'POST' });
-            }
-        }
-
         function updateLED(ledStatus) {
             const lightImage = document.getElementById('light-image');
             const toggleSwitch = document.getElementById('toggle-switch');
 
-            //update the switch and image based on the status
+            // Update the switch and image based on the status
             toggleSwitch.checked = (ledStatus === 'ON');
             lightImage.src = (ledStatus === 'ON') ? ('/static/lit.png') : ('/static/dark.png');
             document.getElementById('led-status').textContent = "LED Status: " + ledStatus;
@@ -120,6 +120,10 @@
         }
 
         function updateFan(fanStatus) {
+            const fanIcon = document.getElementById('fan-icon');
+
+            // Update the image based on the status and switch state
+            fanIcon.src = (fanStatus === 'ON') ? ('/static/fan-on.webp') : ('/static/fan-off.webp');
             document.getElementById('fan-status').textContent = "Fan Status: " + fanStatus;
         }
     </script>

@@ -39,13 +39,14 @@ GPIO.output(FAN_POWER_PIN, GPIO.HIGH)
 dht_sensor = DHT(DHT_PIN)
 
 
-
 # MQTT configuration
 MQTT_BROKER = 'localhost'  # Replace with broker IP if needed
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
 led_state = 'OFF'
 fan_state = 'OFF'
+fan_switch_on = 'NO' # When the client replies to the email, they request a state switch
+email_sent = 'NO'
 
 # Define email function for temperature alerts
 def send_email(temperature):
@@ -90,6 +91,8 @@ def check_email_responses():
                     mail.store(email_id, '+FLAGS', '\\Deleted')
                     mail.expunge()
                     GPIO.output(FAN_PIN, GPIO.HIGH)
+                    fan_state = 'ON'
+                    fan_switch_state = 'YES'
 
             # Logout and clean up
             mail.logout()
@@ -132,13 +135,15 @@ def read_dht_sensor():
 # Function to monitor temperature and control fan
 def monitor_temperature():
     global fan_state
+    global email_sent
     while True:
         humidity, temperature = read_dht_sensor()
         if temperature is not None:
             print(f"Temperature: {temperature}°C, Humidity: {humidity}%")
             if temperature >= 24 and fan_state == 'OFF':
-                fan_state = 'ON' 
-                send_email(temperature)
+                if email_sent == 'NO':
+                    send_email(temperature)
+                    email_sent = 'YES'
             elif temperature < 24 and fan_state == 'ON':
                 fan_state = 'OFF'
                 GPIO.output(FAN_PIN, GPIO.LOW)
