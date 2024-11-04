@@ -1,9 +1,11 @@
-import RPi.GPIO as GPIO
+# import RPi.GPIO as GPIO
+import mock_gpio as GPIO #uncomment to simulate GPIO without physical setup
 from gpiozero import DigitalOutputDevice
 from flask import Flask, render_template, request, jsonify
 import atexit
 import paho.mqtt.client as mqtt
-from Freenove_DHT import DHT
+# from Freenove_DHT import DHT
+from mock_dht import DHT #uncomment to simulate DHT without physical setup
 import smtplib
 from email.mime.text import MIMEText
 from threading import Thread
@@ -157,7 +159,7 @@ def toggle_led(state):
     led_state = state
     mqtt_client.publish(MQTT_TOPIC, state)
     GPIO.output(LED_PIN, GPIO.HIGH if state == 'ON' else GPIO.LOW)
-    return jsonify({'led_status': state}), 200
+    return jsonify({'led_status': led_state, 'fan_status': fan_state}), 200
 
 # Route to control fan directly
 @app.route('/toggle_fan/<state>', methods=['POST'])
@@ -165,7 +167,7 @@ def toggle_fan(state):
     global fan_state
     fan_state = state
     GPIO.output(FAN_PIN, GPIO.HIGH if state == 'ON' else GPIO.LOW)
-    return jsonify({'fan_status': state}), 200
+    return jsonify({'led_status': led_state, 'fan_status': fan_state}), 200
 
 # Handle app exit to ensure GPIO is cleaned up
 def on_exit():

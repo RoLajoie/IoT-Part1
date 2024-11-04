@@ -49,10 +49,9 @@
 
         document.getElementById('toggle-switch').addEventListener('change', function() {
             let newState = this.checked ? 'ON' : 'OFF';
-            fetch('/toggle_led', {
+            fetch(`/toggle_led/${newState}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ state: newState })
+                headers: { 'Content-Type': 'application/json' }
             })
             .then(response => response.json())
             .then(data => updateUI(data.led_status, data.fan_status));
