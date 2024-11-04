@@ -94,15 +94,7 @@
                         }
 
                         // Check if the fan should be toggled ON
-                        if (data.temperature >= 24 && "{{ fan_status }}" === 'OFF') {
-                            // Check email replies first
-                            /*
-                                let newFanState = ("{{ fan_status }}" === 'OFF') ? 'ON' : 'OFF';
-                                fetch(`/toggle_fan/${newFanState}`, { method: 'POST' });
-                                updateFan(newFanState);
-                            */
-                            updateFan('ON');
-                        }
+                        updateFan("{{ fan_status }}");
                     }
                 })
                 .catch(error => console.error('Error fetching sensor data:', error));
@@ -119,7 +111,7 @@
             lightImage.className = (ledStatus === 'ON') ? 'lit' : 'dark';
         }
 
-        function updateFan(fanStatus) {
+        function updateFan(fanStatus, fanSwitchRequested) {
             const fanIcon = document.getElementById('fan-icon');
 
             // Update the image based on the status and switch state

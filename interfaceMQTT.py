@@ -1,11 +1,11 @@
-# import RPi.GPIO as GPIO
-import mock_gpio as GPIO #uncomment to simulate GPIO without physical setup
+import RPi.GPIO as GPIO
+# import mock_gpio as GPIO #uncomment to simulate GPIO without physical setup
 from gpiozero import DigitalOutputDevice
 from flask import Flask, render_template, request, jsonify
 import atexit
 import paho.mqtt.client as mqtt
-# from Freenove_DHT import DHT
-from mock_dht import DHT #uncomment to simulate DHT without physical setup
+from Freenove_DHT import DHT
+# from mock_dht import DHT #uncomment to simulate DHT without physical setup
 import smtplib
 from email.mime.text import MIMEText
 from threading import Thread
@@ -45,25 +45,29 @@ MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
 led_state = 'OFF'
 fan_state = 'OFF'
-fan_switch_on = 'NO' # When the client replies to the email, they request a state switch
-email_sent = 'NO'
+fan_switch_on = False # When the client replies to the email, they request a state switch
+email_sent = False
 
 # Define email function for temperature alerts
 def send_email(temperature):
-    msg = MIMEText(f"The current temperature is {temperature}°C. Would you like to turn on the fan?")
-    msg['Subject'] = 'Temperature Alert'
-    msg['From'] = 'whatisiot1@gmail.com'
-    # msg['To'] = 'Maximrotaru16@gmail.com'
-    msg['To'] = 'levitind@gmail.com'
-    
-    with smtplib.SMTP('smtp.gmail.com', 587) as server:
-        server.starttls()
-        server.login('whatisiot1@gmail.com', 'ayvi plyw mqzd vrtz')
-        server.sendmail(msg['From'], [msg['To']], msg.as_string())
-    print('Email sent')
+    global email_sent
+    if not email_sent:
+        msg = MIMEText(f"The current temperature is {temperature}°C. Would you like to turn on the fan?")
+        msg['Subject'] = 'Temperature Alert'
+        msg['From'] = 'whatisiot1@gmail.com'
+        # msg['To'] = 'Maximrotaru16@gmail.com'
+        msg['To'] = 'levitind@gmail.com'
+        
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login('whatisiot1@gmail.com', 'ayvi plyw mqzd vrtz')
+            server.sendmail(msg['From'], [msg['To']], msg.as_string())
+        email_sent = True
+        print('Email sent')
     
 # Function to check email responses and control LED
 def check_email_responses():
+    global fan_switch_on
     while True:
         try:
             # Login to your account
@@ -91,8 +95,7 @@ def check_email_responses():
                     mail.store(email_id, '+FLAGS', '\\Deleted')
                     mail.expunge()
                     GPIO.output(FAN_PIN, GPIO.HIGH)
-                    fan_state = 'ON'
-                    fan_switch_state = 'YES'
+                    fan_switch_on = True
 
             # Logout and clean up
             mail.logout()
@@ -109,7 +112,6 @@ mqtt_client.loop_start()
 # Email configuration for sending alerts
 port = 465
 app_specific_password = "ayvi plyw mqzd vrtz"
-email_sent = False
 
 # Email configuration for checking responses
 username = "whatisiot1@gmail.com"
@@ -157,7 +159,7 @@ Thread(target=check_email_responses, daemon=True).start()
 # Route to render the dashboard
 @app.route('/')
 def index():
-    return render_template('dashboardMQTT.html', led_status=led_state, fan_status=fan_state)
+    return render_template('dashboardMQTT.html', led_status=led_state, fan_status=fan_state, fan_switch_requested=fan_switch_on)
 
 # Route to toggle LED via MQTT
 @app.route('/toggle_led/<state>', methods=['POST'])
