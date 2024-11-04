@@ -94,7 +94,7 @@
                         }
 
                         // Check if the fan should be toggled ON
-                        updateFan("{{ fan_status }}");
+                        updateFan("{{ fan_status }}", "{{ fan_switch_requested }}");
                     }
                 })
                 .catch(error => console.error('Error fetching sensor data:', error));
@@ -115,7 +115,7 @@
             const fanIcon = document.getElementById('fan-icon');
 
             // Update the image based on the status and switch state
-            fanIcon.src = (fanStatus === 'ON') ? ('/static/fan-on.webp') : ('/static/fan-off.webp');
+            fanIcon.src = (fanStatus === 'ON' && fanSwitchRequested) ? ('/static/fan-on.webp') : ('/static/fan-off.webp');
             document.getElementById('fan-status').textContent = "Fan Status: " + fanStatus;
         }
     </script>
