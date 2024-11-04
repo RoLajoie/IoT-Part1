@@ -35,20 +35,21 @@ GPIO.output(LED_PIN, GPIO.LOW)
 GPIO.output(FAN_PIN, GPIO.LOW)
 GPIO.output(FAN_POWER_PIN, GPIO.HIGH)
 
+
 # Initialize DHT sensor
 dht_sensor = DHT(DHT_PIN)
 
 
 # MQTT configuration
-MQTT_BROKER = 'localhost'  # Replace with broker IP if needed
+MQTT_BROKER = 'localhost' 
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
 led_state = 'OFF'
 fan_state = 'OFF'
-fan_switch_on = False # When the client replies to the email, they request a state switch
+fan_switch_on = False 
 email_sent = False
 
-# Define email function for temperature alerts
+
 def send_email(temperature):
     global email_sent
     if not email_sent:
@@ -56,7 +57,7 @@ def send_email(temperature):
         msg['Subject'] = 'Temperature Alert'
         msg['From'] = 'whatisiot1@gmail.com'
         # msg['To'] = 'Maximrotaru16@gmail.com'
-        msg['To'] = 'levitind@gmail.com'
+        msg['To'] = 'maximrotaru16@gmail.com'
         
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
@@ -64,18 +65,17 @@ def send_email(temperature):
             server.sendmail(msg['From'], [msg['To']], msg.as_string())
         email_sent = True
         print('Email sent')
-    
-# Function to check email responses and control LED
+
 def check_email_responses():
     global fan_switch_on
     while True:
         try:
-            # Login to your account
+            
             mail = imaplib.IMAP4_SSL("imap.gmail.com")
             mail.login(username, imap_password)
             mail.select("inbox")
 
-            # Search for emails with "Re:" in the subject
+            # For email respond in the subject 
             status, messages = mail.search(None, 'SUBJECT "Re:"')
             email_ids = messages[0].split()
 
@@ -97,9 +97,9 @@ def check_email_responses():
                     GPIO.output(FAN_PIN, GPIO.HIGH)
                     fan_switch_on = True
 
-            # Logout and clean up
+           
             mail.logout()
-            time.sleep(10)  # Check every 10 seconds
+            time.sleep(10)  
 
         except Exception as e:
             print(f"Error checking emails: {e}")
@@ -143,9 +143,10 @@ def monitor_temperature():
         if temperature is not None:
             print(f"Temperature: {temperature}°C, Humidity: {humidity}%")
             if temperature >= 24 and fan_state == 'OFF':
-                if email_sent == 'NO':
+                if email_sent == False:
                     send_email(temperature)
-                    email_sent = 'YES'
+                    email_sent = True
+                    fan_state = "ON"
             elif temperature < 24 and fan_state == 'ON':
                 fan_state = 'OFF'
                 GPIO.output(FAN_PIN, GPIO.LOW)
