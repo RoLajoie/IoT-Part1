@@ -9,9 +9,6 @@ You can install the required libraries using the commands below:
 # General Raspberry Pi GPIO library
 sudo apt-get install python3-rpi.gpio
 
-# Adafruit DHT library for sensor data
-sudo pip3 install Adafruit_DHT
-
 # Flask for web interface
 sudo pip3 install Flask
 

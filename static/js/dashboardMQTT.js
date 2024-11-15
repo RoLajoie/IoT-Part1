@@ -1,4 +1,5 @@
-let tGauge;
+let temperatureGauge;
+let humidityGauge;
   
 window.onload = () => {
     // Initialize everything first
@@ -19,6 +20,42 @@ window.onload = () => {
     updateFan("{{ fan_status }}");
 };
 
+function initializeGauges() {
+    temperatureGauge = new JustGage({
+        id: "temperature-gauge",
+        value: -1,
+        min: 15,
+        max: 30,
+        title: "Temperature"
+    });
+    
+    humidityGauge = new JustGage({
+        id: "humidity-gauge",
+        value: -1,
+        min: 0,
+        max: 100,
+        title: "Humidity",
+        customSectors: {
+            percents: true, // lo and hi values are in %
+            ranges: [{
+              color : "#f2f6f7",
+              lo : 0,
+              hi : 33
+            },
+            {
+              color : "#f2f6f7",
+              lo : 34,
+              hi : 66
+            },
+            {
+              color : "#0000ff",
+              lo : 67,
+              hi : 100
+              }]
+          }
+    });
+}
+
 function fetchData() {
     fetch('/sensor_data')
         .then(response => {
@@ -33,8 +70,9 @@ function fetchData() {
                 document.getElementById('humidity-value').textContent = data.humidity + '%';
 
 
-                // Update the gauge based on temperature
-                tGauge.refresh(data.temperature);
+                // Update the gauges
+                temperatureGauge.refresh(data.temperature);
+                humidityGauge.refresh(data.humidity);
 
 
                 // Set humidity icon based on range
@@ -54,17 +92,6 @@ function fetchData() {
         })
         .catch(error => console.error('Error fetching sensor data:', error));
 }
-
-function initializeGauges() {
-    tGauge = new JustGage({
-        id: "temperature-gauge",
-        value: -1,
-        min: 15,
-        max: 30,
-        title: "Temperature"
-      });
-}
-
 
 function updateLED(ledStatus) {
     // Defining the variables
