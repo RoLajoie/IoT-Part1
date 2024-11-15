@@ -1,11 +1,11 @@
-import RPi.GPIO as GPIO
-# import mock_gpio as GPIO #uncomment to simulate GPIO without physical setup
+# import RPi.GPIO as GPIO
+import mock_gpio as GPIO #uncomment to simulate GPIO without physical setup
 from gpiozero import DigitalOutputDevice
 from flask import Flask, render_template, request, jsonify
 import atexit
 import paho.mqtt.client as mqtt
-from Freenove_DHT import DHT
-# from mock_dht import DHT #uncomment to simulate DHT without physical setup
+# from Freenove_DHT import DHT
+from mock_dht import DHT #uncomment to simulate DHT without physical setup
 import smtplib
 from email.mime.text import MIMEText
 from threading import Thread
@@ -56,8 +56,9 @@ def send_email(temperature):
         msg = MIMEText(f"The current temperature is {temperature}°C. Would you like to turn on the fan?")
         msg['Subject'] = 'Temperature Alert'
         msg['From'] = 'whatisiot1@gmail.com'
-        # msg['To'] = 'Maximrotaru16@gmail.com'
-        msg['To'] = 'maximrotaru16@gmail.com'
+        # msg['To'] = 'maximrotaru16@gmail.com'
+        msg['To'] = 'levitind@gmail.com'
+
         
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()

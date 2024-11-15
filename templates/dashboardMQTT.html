@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Home IoT Dashboard</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-gauge@0.1.8/dist/chartjs-chart-gauge.min.js"></script>
-    <link rel="stylesheet" target=_blank href="{{ url_for('static', filename='dashboard.css') }}">
+    <script src="{{ url_for('static', filename='js/justgage-1.2.2/raphael-2.1.4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/justgage-1.2.2/justgage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboardMQTT.js') }}"></script>
+    <link rel="stylesheet" target=_blank href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 <body>
     <div class="dashboard-container">
@@ -24,156 +24,27 @@
         </div>
         
         <div class="data-container">
-            <img id="light-image" src="/static/dark.png" alt="Light Status" class="dark">
+            <img id="light-image" src="/static/images/dark.png" alt="Light Status" class="dark">
 
 
             <div class="data-display">Temperature: <span id="temp-value">{{ temperature }}°C</span></div>
             
             <!-- Temperature gauge -->
-            <canvas id="temp-gauge" width="200" height="200"></canvas>
+            <div id="tgauge" class="200x160px"></div>
 
 
             <div class="data-display">Humidity: <span id="humidity-value">{{ humidity }}%</span></div>
-            <img id="humidity-icon" src="/static/humidity-mid.webp" alt="Humidity Level" class="mid">
+            <img id="humidity-icon" src="/static/images/humidity-mid.webp" alt="Humidity Level" class="mid">
 
 
             <p id="fan-status">Fan Status: {{ fan_status }}</p>
-            <img id="fan-icon" src="/static/fan-off.webp" alt="Fan Status" class="off">
+            <img id="fan-icon" src="/static/images/fan-off.webp" alt="Fan Status" class="off">
         </div>
         
         <footer>
             By: Rowan Lajoie, Maxim Rotaru, Daniel Levitin
         </footer>
     </div>
-
-
-    <script>
-        window.onload = () => {
-            setInterval(fetchData, 5000);
-            updateLED("{{ led_status }}");
-            updateFan("{{ fan_status }}");
-            initializeGauge();  // Initialize the gauge on load
-        };
-
-
-        document.getElementById('toggle-switch').addEventListener('change', function() {
-            let newState = this.checked ? 'ON' : 'OFF';
-            fetch(`/toggle_led/${newState}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => updateLED(data.led_status));
-        });
-
-
-        function fetchData() {
-            fetch('/sensor_data')
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.temperature && data.humidity) {
-                        document.getElementById('temp-value').textContent = data.temperature + '°C';
-                        document.getElementById('humidity-value').textContent = data.humidity + '%';
-
-
-                        // Update the gauge based on temperature
-                        updateGauge(data.temperature);
-
-
-                        // Set humidity icon based on range
-                        const humidityIcon = document.getElementById('humidity-icon');
-                        if (data.humidity < 30) {
-                            humidityIcon.src = '/static/humidity-low.webp';
-                        } else if (data.humidity <= 60) {
-                            humidityIcon.src = '/static/humidity-mid.webp';
-                        } else {
-                            humidityIcon.src = '/static/humidity-high.webp';
-                        }
-
-
-                        // Check if the fan should be toggled ON
-                        updateFan("{{ fan_status }}", "{{ fan_switch_requested }}");
-                    }
-                })
-                .catch(error => console.error('Error fetching sensor data:', error));
-        }
-
-
-        function updateLED(ledStatus) {
-            const lightImage = document.getElementById('light-image');
-            const toggleSwitch = document.getElementById('toggle-switch');
-
-
-            toggleSwitch.checked = (ledStatus === 'ON');
-            lightImage.src = (ledStatus === 'ON') ? ('/static/lit.png') : ('/static/dark.png');
-            document.getElementById('led-status').textContent = "LED Status: " + ledStatus;
-            lightImage.className = (ledStatus === 'ON') ? 'lit' : 'dark';
-        }
-
-
-        function updateFan(fanStatus, fanSwitchRequested) {
-            const fanIcon = document.getElementById('fan-icon');
-
-
-            fanIcon.src = (fanStatus === 'ON' && fanSwitchRequested) ? ('/static/fan-on.webp') : ('/static/fan-off.webp');
-            document.getElementById('fan-status').textContent = "Fan Status: " + fanStatus;
-        }
-
-
-        function initializeGauge() {
-            const ctx = document.getElementById('temp-gauge').getContext('2d');
-            window.tempGauge = new Chart(ctx, {
-                type: 'gauge',
-                data: {
-                    datasets: [{
-                        value: 0,  // Set initial value
-                        minValue: 0,  // Set minimum value
-                        maxValue: 50,  // Set maximum value
-                        data: [0, 10, 20, 30, 40, 50],
-                        backgroundColor: ['#00ff00', '#ffcc00', '#ff9900', '#ff6600', '#ff3300', '#ff0000']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    layout: {
-                        padding: {
-                            bottom: 10
-                        }
-                    },
-                    needle: {
-                        radiusPercentage: 2,
-                        widthPercentage: 3.2,
-                        lengthPercentage: 80,
-                        color: 'rgba(0, 0, 0, 0.75)'
-                    },
-                    valueLabel: {
-                        formatter: Math.round,
-                        display: true,
-                        color: '#000',
-                        font: {
-                            size: 18
-                        }
-                    },
-                    plugins: {
-                        tooltip: {
-                            enabled: false  // Disable tooltip display
-                        }
-                    }
-                }
-            });
-        }
-
-
-        function updateGauge(temperature) {
-            if (window.tempGauge) {
-                window.tempGauge.data.datasets[0].value = temperature;
-                window.tempGauge.update();
-            }
-        }
-    </script>
 </body>
 </html>
  
