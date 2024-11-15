@@ -1,6 +1,9 @@
-  window.onload = () => {
+let tGauge;
+  
+window.onload = () => {
     // Initialize everything first
     initializeGauges();
+
     document.getElementById('toggle-switch').addEventListener('change', function() {
         let newState = this.checked ? 'ON' : 'OFF';
         fetch(`/toggle_led/${newState}`, {
@@ -24,7 +27,8 @@ function fetchData() {
         })
         .then(data => {
             if (data.temperature && data.humidity) {
-                // Update text values for temperature and humidity [TO REMOVE IN LATER BUILD]
+                // Update text values for temperature and humidity
+                // TODO: REMOVE IN LATER BUILD
                 document.getElementById('temp-value').textContent = data.temperature + '°C';
                 document.getElementById('humidity-value').textContent = data.humidity + '%';
 
@@ -52,8 +56,8 @@ function fetchData() {
 }
 
 function initializeGauges() {
-    let tGauge = new JustGage({
-        id: "tgauge",
+    tGauge = new JustGage({
+        id: "temperature-gauge",
         value: -1,
         min: 15,
         max: 30,
@@ -63,13 +67,20 @@ function initializeGauges() {
 
 
 function updateLED(ledStatus) {
+    // Defining the variables
     const lightImage = document.getElementById('light-image');
     const toggleSwitch = document.getElementById('toggle-switch');
 
-
+    // Assigning the variables and displaying on the page
     toggleSwitch.checked = (ledStatus === 'ON');
     lightImage.src = (ledStatus === 'ON') ? ('/static/images/lit.png') : ('/static/images/dark.png');
-    document.getElementById('led-status').textContent = "LED Status: " + ledStatus;
+    // If not received yet, don't want to display "{{ led_status }}"
+    // TODO: confirm if better to just set to dark if waiting
+    if (ledStatus === "{{ led_status }}") {
+        document.getElementById('led-status').textContent = "LED Status: Waiting...";
+    } else {
+        document.getElementById('led-status').textContent = "LED Status: " + ledStatus;
+    }
     lightImage.className = (ledStatus === 'ON') ? 'lit' : 'dark';
 }
 
@@ -77,7 +88,12 @@ function updateLED(ledStatus) {
 function updateFan(fanStatus, fanSwitchRequested) {
     const fanIcon = document.getElementById('fan-icon');
 
-
     fanIcon.src = (fanStatus === 'ON' && fanSwitchRequested) ? ('/static/images/fan-on.webp') : ('/static/images/fan-off.webp');
-    document.getElementById('fan-status').textContent = "Fan Status: " + fanStatus;
+    // If not received yet, don't want to display "{{ fan_status }}"
+    // TODO: confirm if better to just set to off if waiting
+    if (fanStatus === "{{ fan_status }}") {
+        document.getElementById('fan-status').textContent = "Fan Status: Waiting...";
+    } else {
+        document.getElementById('fan-status').textContent = "Fan Status: " + fanStatus;
+    }
 }
