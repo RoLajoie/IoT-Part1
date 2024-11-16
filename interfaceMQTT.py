@@ -41,9 +41,10 @@ dht_sensor = DHT(DHT_PIN)
 
 
 # MQTT configuration
-MQTT_BROKER = 'localhost' 
+MQTT_BROKER = '192.168.55.131' 
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
+MQTT_TOPIC_LIGHT = 'home/light'
 led_state = 'OFF'
 fan_state = 'OFF'
 fan_switch_on = False 
@@ -110,6 +111,8 @@ mqtt_client = mqtt.Client()
 mqtt_client.connect(MQTT_BROKER, 1883, 60)
 mqtt_client.loop_start()
 
+
+
 # Email configuration for sending alerts
 port = 465
 app_specific_password = "ayvi plyw mqzd vrtz"
@@ -122,6 +125,18 @@ imap_password = "ayvi plyw mqzd vrtz"
 app = Flask(__name__)
 
 # Sensor reading functionTemperature: 24.0°C, Humidity: 44.0%
+
+light_intensity = 0  # Global variable to store the latest light intensity
+
+def on_message(client, userdata, msg):
+    global light_intensity
+    if msg.topic == MQTT_TOPIC_LIGHT:
+        try:
+            light_intensity = int(msg.payload.decode())  # Decode and store the light intensity value
+            print(f"Received light intensity: {light_intensity}")
+        except ValueError:
+            print(f"Invalid light intensity value received: {msg.payload.decode()}")
+
 
 def read_dht_sensor():
     chk = dht_sensor.readDHT11()
@@ -157,6 +172,9 @@ def monitor_temperature():
 Thread(target=monitor_temperature, daemon=True).start()
 # Check email response thread
 Thread(target=check_email_responses, daemon=True).start()
+
+mqtt_client.on_message = on_message  # Attach the handler
+mqtt_client.subscribe(MQTT_TOPIC_LIGHT)  # Subscribe to the light intensity topic
 
 # Route to render the dashboard
 @app.route('/')

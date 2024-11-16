@@ -6,7 +6,7 @@ WiFiMulti WiFiMulti;
 
 // Define the pin for the photoresistor
 const int photoresistorPin = 32; // Analog pin
-const char* mqtt_server = "YOUR_MQTT_BROKER_IP_ADDRESS";
+const char* mqtt_server = "192.168.55.131";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -39,7 +39,7 @@ void reconnect() {
     Serial.print("Attempting MQTT connection...");
     if (client.connect("vanieriot")) {
       Serial.println("connected");
-      client.subscribe("room/light");
+      client.subscribe("home/light");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -53,7 +53,7 @@ void setup() {
   Serial.begin(115200);
   delay(10);
 
-  WiFiMulti.addAP("REPLACE_WITH_YOUR_SSID", "REPLACE_WITH_YOUR_PASSWORD");
+  WiFiMulti.addAP("Willynilly", "segregation");
   setup_wifi();
 
   client.setServer(mqtt_server, 1883);
@@ -77,7 +77,7 @@ void loop() {
   Serial.println(message);
 
   // Publish the light intensity to the MQTT topic
-  client.publish("room/light_intensity", message);
+  client.publish("home/light", message);
 
   // Delay between readings
   delay(2000); // Adjust the delay as needed
