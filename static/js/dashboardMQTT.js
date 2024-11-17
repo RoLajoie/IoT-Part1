@@ -1,7 +1,9 @@
 let temperatureGauge;
 let humidityGauge;
+let luminosityGauge;
   
 window.onload = () => {
+    // TODO: if extra time, better to put a loader until there's info
     // Initialize everything first
     initializeGauges();
 
@@ -45,6 +47,17 @@ function initializeGauges() {
         gaugeWidthScale: 0.5,
         levelColors: ["#b5e8f5", "#2e98b3", "#0000ff"],
     });
+
+    luminosityGauge = new JustGage({
+        id: "luminosity-gauge",
+        value: -1,
+        min: 0,
+        max: 1000,
+        reverse: true,
+        title: "Luminosity",
+        gaugeWidthScale: 0.5,
+        levelColors: ["#2a2a2a","#d1cfb6", "#f7f697"],
+    });
 }
 
 function fetchData() {
@@ -54,10 +67,11 @@ function fetchData() {
             return response.json();
         })
         .then(data => {
-            if (data.temperature && data.humidity) {
+            if (data.temperature && data.humidity && data.luminosity) {
                 // Update the gauges with values
                 temperatureGauge.refresh(data.temperature);
                 humidityGauge.refresh(data.humidity);
+                luminosityGauge.refresh(data.luminosity);
 
                 // Check if the fan should be toggled ON
                 updateFan("{{ fan_status }}", "{{ fan_switch_requested }}");
@@ -74,10 +88,10 @@ function updateLED(ledStatus) {
     // Assigning the variables and displaying on the page
     toggleSwitch.checked = (ledStatus === 'ON');
     lightImage.src = (ledStatus === 'ON') ? ('/static/images/lit.png') : ('/static/images/dark.png');
+    // TODO: ideally would display only the passed info
     // If not received yet, don't want to display "{{ led_status }}"
-    // TODO: confirm if better to just set to dark if waiting
     if (ledStatus === "{{ led_status }}") {
-        document.getElementById('led-status').textContent = "LED Status: Waiting...";
+        document.getElementById('led-status').textContent = "LED Status: OFF";
     } else {
         document.getElementById('led-status').textContent = "LED Status: " + ledStatus;
     }
@@ -89,10 +103,10 @@ function updateFan(fanStatus, fanSwitchRequested) {
     const fanIcon = document.getElementById('fan-icon');
 
     fanIcon.src = (fanStatus === 'ON' && fanSwitchRequested) ? ('/static/images/fan-on.webp') : ('/static/images/fan-off.webp');
+    // TODO: ideally would display only the passed info
     // If not received yet, don't want to display "{{ fan_status }}"
-    // TODO: confirm if better to just set to off if waiting
     if (fanStatus === "{{ fan_status }}") {
-        document.getElementById('fan-status').textContent = "Fan Status: Waiting...";
+        document.getElementById('fan-status').textContent = "Fan Status: OFF";
     } else {
         document.getElementById('fan-status').textContent = "Fan Status: " + fanStatus;
     }

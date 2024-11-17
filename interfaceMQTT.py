@@ -1,11 +1,11 @@
 # import RPi.GPIO as GPIO
-import mock_gpio as GPIO #uncomment to simulate GPIO without physical setup
+import mock_gpio as GPIO #MOCK: simulate GPIO
 from gpiozero import DigitalOutputDevice
 from flask import Flask, render_template, request, jsonify
 import atexit
 import paho.mqtt.client as mqtt
-# from Freenove_DHT import DHT
-from mock_dht import DHT #uncomment to simulate DHT without physical setup
+from Freenove_DHT import DHT
+# from mock_dht import DHT #MOCK: simulates DHT
 import smtplib
 from email.mime.text import MIMEText
 from threading import Thread
@@ -41,8 +41,8 @@ dht_sensor = DHT(DHT_PIN)
 
 
 # MQTT configuration
-# MQTT_BROKER = '192.168.55.131'
-MQTT_BROKER = 'localhost'
+MQTT_BROKER = '192.168.55.131'
+# MQTT_BROKER = 'localhost' # MOCK: localhost :)
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
 MQTT_TOPIC_LIGHT = 'home/light'
@@ -50,6 +50,7 @@ led_state = 'OFF'
 fan_state = 'OFF'
 fan_switch_on = False
 email_sent = False
+light_intensity = 0
 
 
 def send_email(temperature):
@@ -125,10 +126,6 @@ imap_password = "ayvi plyw mqzd vrtz"
 # Flask setup
 app = Flask(__name__)
 
-# Sensor reading functionTemperature: 24.0°C, Humidity: 44.0%
-
-light_intensity = 0  # Global variable to store the latest light intensity
-
 def on_message(client, userdata, msg):
     global light_intensity
     if msg.topic == MQTT_TOPIC_LIGHT:
@@ -180,7 +177,7 @@ mqtt_client.subscribe(MQTT_TOPIC_LIGHT)  # Subscribe to the light intensity topi
 # Route to render the dashboard
 @app.route('/')
 def index():
-    return render_template('dashboard.html', led_status=led_state, fan_status=fan_state, fan_switch_requested=fan_switch_on)
+    return render_template('dashboard.html', led_status=led_state, fan_status=fan_state, fan_switch_requested=fan_switch_on, luminosity=light_intensity)
 
 # Route to toggle LED via MQTT
 @app.route('/toggle_led/<state>', methods=['POST'])
