@@ -24,35 +24,26 @@ function initializeGauges() {
     temperatureGauge = new JustGage({
         id: "temperature-gauge",
         value: -1,
+        decimals: 1,
         min: 15,
         max: 30,
-        title: "Temperature"
+        title: "Temperature",
+        symbol: "°C",
+        gaugeWidthScale: 0.5,
+        pointer: true,
     });
-    
+
     humidityGauge = new JustGage({
         id: "humidity-gauge",
+        donut: true,
         value: -1,
+        decimals: 1,
         min: 0,
         max: 100,
         title: "Humidity",
-        customSectors: {
-            percents: true, // lo and hi values are in %
-            ranges: [{
-              color : "#f2f6f7",
-              lo : 0,
-              hi : 33
-            },
-            {
-              color : "#f2f6f7",
-              lo : 34,
-              hi : 66
-            },
-            {
-              color : "#0000ff",
-              lo : 67,
-              hi : 100
-              }]
-          }
+        symbol: "%",
+        gaugeWidthScale: 0.5,
+        levelColors: ["#b5e8f5", "#2e98b3", "#0000ff"],
     });
 }
 
@@ -64,27 +55,9 @@ function fetchData() {
         })
         .then(data => {
             if (data.temperature && data.humidity) {
-                // Update text values for temperature and humidity
-                // TODO: REMOVE IN LATER BUILD
-                document.getElementById('temp-value').textContent = data.temperature + '°C';
-                document.getElementById('humidity-value').textContent = data.humidity + '%';
-
-
-                // Update the gauges
+                // Update the gauges with values
                 temperatureGauge.refresh(data.temperature);
                 humidityGauge.refresh(data.humidity);
-
-
-                // Set humidity icon based on range
-                const humidityIcon = document.getElementById('humidity-icon');
-                if (data.humidity < 30) {
-                    humidityIcon.src = '/static/images/humidity-low.webp';
-                } else if (data.humidity <= 60) {
-                    humidityIcon.src = '/static/images/humidity-mid.webp';
-                } else {
-                    humidityIcon.src = '/static/images/humidity-high.webp';
-                }
-
 
                 // Check if the fan should be toggled ON
                 updateFan("{{ fan_status }}", "{{ fan_switch_requested }}");

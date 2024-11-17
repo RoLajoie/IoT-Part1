@@ -4,18 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Home IoT Dashboard</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- CSS Styling -->
-    <style src="./dashboard.css"></style>
+    <script src="{{ url_for('static', filename='js/justgage-1.2.2/raphael-2.1.4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/justgage-1.2.2/justgage.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboardMQTT.js') }}"></script>
+    <link rel="stylesheet" target=_blank href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 <body>
     <div class="dashboard-container">
         <h1>Smart Home IoT Dashboard</h1>
         
-        <!-- Displaying the dynamic LED status -->
         <p id="led-status">LED Status: {{ led_status }}</p>
-
-        <!-- Toggle switch for controlling the LED -->
+        
         <div class="toggle-switch-container">
             <span class="toggle-switch-label">Light Status:</span>
             <label class="toggle-switch">
@@ -23,53 +22,24 @@
                 <span class="slider"></span>
             </label>
         </div>
+        
+        <div class="data-container">
+            <img id="light-image" src="/static/images/dark.png" alt="Light Status" class="dark">
+            
+            <!-- Temperature gauge -->
+            <div id="temperature-gauge" class="gauge"></div>
+             <!-- Humidity gauge -->
+            <div id="humidity-gauge" class="gauge"></div>
 
-        <!-- Light status image -->
-        <img id="light-image" src="/static/dark.png" alt="Light Status" class="dark">
 
-        <!-- Footer -->
+            <p id="fan-status">Fan Status: {{ fan_status }}</p>
+            <img id="fan-icon" src="/static/images/fan-off.webp" alt="Fan Status" class="off">
+        </div>
+        
         <footer>
             By: Rowan Lajoie, Maxim Rotaru, Daniel Levitin
         </footer>
     </div>
-
-    <script>
-        
-        //LED status passed from the backend
-        let ledStatus = "{{ led_status }}";
-
-        //updates UI when the page loads
-        window.onload = () => updateUI(ledStatus);
-
-        //event listener for the toggle switch
-        document.getElementById('toggle-switch').addEventListener('change', function() {
-            let newState = this.checked ? 'ON' : 'OFF';
-
-            //send state to backend through POST 
-            fetch('/toggle_led', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ state: newState })
-            })
-            .then(response => response.json())
-            .then(data => {
-                updateUI(data.led_status); 
-            });
-        });
-
-        //updating UI based on the LED status
-        function updateUI(status) {
-            const lightImage = document.getElementById('light-image');
-            const toggleSwitch = document.getElementById('toggle-switch');
-
-            //update the switch and image based on the status
-            toggleSwitch.checked = (status === 'ON');
-            lightImage.src = status === 'ON' ? '/static/lit.png' : '/static/dark.png';
-            document.getElementById('led-status').textContent = "LED Status: " + status;
-            lightImage.className = status === 'ON' ? 'lit' : 'dark';
-        }
-    </script>
 </body>
 </html>
+ 

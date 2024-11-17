@@ -41,13 +41,14 @@ dht_sensor = DHT(DHT_PIN)
 
 
 # MQTT configuration
-MQTT_BROKER = '192.168.55.131' 
+# MQTT_BROKER = '192.168.55.131'
+MQTT_BROKER = 'localhost'
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
 MQTT_TOPIC_LIGHT = 'home/light'
 led_state = 'OFF'
 fan_state = 'OFF'
-fan_switch_on = False 
+fan_switch_on = False
 email_sent = False
 
 
@@ -179,7 +180,7 @@ mqtt_client.subscribe(MQTT_TOPIC_LIGHT)  # Subscribe to the light intensity topi
 # Route to render the dashboard
 @app.route('/')
 def index():
-    return render_template('dashboardMQTT.html', led_status=led_state, fan_status=fan_state, fan_switch_requested=fan_switch_on)
+    return render_template('dashboard.html', led_status=led_state, fan_status=fan_state, fan_switch_requested=fan_switch_on)
 
 # Route to toggle LED via MQTT
 @app.route('/toggle_led/<state>', methods=['POST'])
