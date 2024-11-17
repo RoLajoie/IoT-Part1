@@ -111,3 +111,15 @@ function updateFan(fanStatus, fanSwitchRequested) {
         document.getElementById('fan-status').textContent = "Fan Status: " + fanStatus;
     }
 }
+
+function checkEmailNotification() {
+    fetch('/check_email_notification')
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                // If there's a notification, show a popup
+                alert(data.message);
+            }
+        })
+        .catch(error => console.error('Error checking email notification:', error));
+}

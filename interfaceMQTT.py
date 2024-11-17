@@ -46,12 +46,14 @@ MQTT_BROKER = '192.168.55.131'
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
 MQTT_TOPIC_LIGHT = 'home/light'
+# State machines for fan and friends
 led_state = 'OFF'
 fan_state = 'OFF'
 fan_switch_on = False
 email_sent = False
+# Dynamic Light Related Variables
 light_intensity = 0
-
+light_email_sent = False; 
 
 def send_email(temperature):
     global email_sent
@@ -108,12 +110,29 @@ def check_email_responses():
         except Exception as e:
             print(f"Error checking emails: {e}")
 
+def send_light_email():
+    global email_sent
+    if not email_sent:
+        msg = MIMEText(f"Dark room detected. LED Light has been activated")
+        msg['Subject'] = 'LED Enabled'
+        msg['From'] = 'whatisiot1@gmail.com'
+        # msg['To'] = 'maximrotaru16@gmail.com'
+        msg['To'] = 'rowanlajoie04@gmail.com'
+
+        
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login('whatisiot1@gmail.com', 'ayvi plyw mqzd vrtz')
+            server.sendmail(msg['From'], [msg['To']], msg.as_string())
+        email_sent = True
+        print('Email sent')
+
+
+
 # MQTT setup
 mqtt_client = mqtt.Client()
 mqtt_client.connect(MQTT_BROKER, 1883, 60)
 mqtt_client.loop_start()
-
-
 
 # Email configuration for sending alerts
 port = 465
@@ -132,6 +151,14 @@ def on_message(client, userdata, msg):
         try:
             light_intensity = int(msg.payload.decode())  # Decode and store the light intensity value
             print(f"Received light intensity: {light_intensity}")
+            if light_intensity < 400 and not light_email_sent:
+                toggle_led('ON')
+                send_light_email()
+                light_email_sent = True  # Set flag to true after sending the email
+
+            # Reset the flag if light intensity is back above the threshold
+            elif light_intensity >= 400:
+                light_email_sent = False
         except ValueError:
             print(f"Invalid light intensity value received: {msg.payload.decode()}")
 
@@ -177,7 +204,7 @@ mqtt_client.subscribe(MQTT_TOPIC_LIGHT)  # Subscribe to the light intensity topi
 # Route to render the dashboard
 @app.route('/')
 def index():
-    return render_template('dashboard.html', led_status=led_state, fan_status=fan_state, fan_switch_requested=fan_switch_on, luminosity=light_intensity)
+    return render_template('dashboard.html', led_status=led_state, fan_status=fan_state, fan_switch_requested=fan_switch_on, luminosity=light_intensity, light_email_sent = light_email_sent)
 
 # Route to toggle LED via MQTT
 @app.route('/toggle_led/<state>', methods=['POST'])
@@ -214,6 +241,19 @@ def sensor_data():
         return jsonify({'temperature': temperature, 'humidity': humidity})
     else:
         return jsonify({'error': 'Could not retrieve sensor data'}), 500
+
+
+# Checking the email has been sent for the light
+@app.route('/check_email_notification')
+def check_email_notification():
+    global light_email_sent
+    if light_email_sent:
+        # Reset the notification flag to avoid repeated alerts
+        light_email_sent = False
+        return jsonify({'message': 'Light Notification Has Been Sent.'}), 200
+    else:
+        return jsonify({'message': None}), 200
+
 
 atexit.register(on_exit)
 
