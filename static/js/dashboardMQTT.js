@@ -23,7 +23,7 @@ window.onload = () => {
         1000);
     updateLED("{{ led_status }}");
     updateFan("{{ fan_status }}");
-};
+    };
 
 function initializeGauges() {
     temperatureGauge = new JustGage({
@@ -70,13 +70,13 @@ function fetchData() {
             return response.json();
         })
         .then(data => {
-            if (data.temperature) {
+            if (data.temperature || data.temperature === 0) {
                 // Update the gauges with values
                 temperatureGauge.refresh(data.temperature);
 
                 updateFan("{{ fan_status }}", "{{ fan_switch_requested }}");
             }
-            if (data.humidity) {
+            if (data.humidity || data.humidity === 0) {
                 // Update the gauges with values
                 humidityGauge.refresh(data.humidity);
             }
@@ -91,8 +91,7 @@ function fetchLightData() {
             return response.json();
         })
         .then(data => {
-
-            if (data.luminosity) {
+            if (data.luminosity || data.luminosity === 0) {
                 // Update the gauges with values
                 luminosityGauge.refresh(data.luminosity);
             }

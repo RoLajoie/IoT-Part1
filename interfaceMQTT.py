@@ -111,9 +111,8 @@ def check_email_responses():
             print(f"Error checking emails: {e}")
 
 def send_light_email():
-    global email_sent
     global light_email_sent
-    if not email_sent:
+    if not light_email_sent:
         msg = MIMEText(f"Dark room detected. LED Light has been activated")
         msg['Subject'] = 'LED Enabled'
         msg['From'] = 'whatisiot1@gmail.com'
@@ -125,7 +124,6 @@ def send_light_email():
             server.starttls()
             server.login('whatisiot1@gmail.com', 'ayvi plyw mqzd vrtz')
             server.sendmail(msg['From'], [msg['To']], msg.as_string())
-        email_sent = True
         print('Email sent')
 
 
