@@ -17,7 +17,10 @@ window.onload = () => {
         .then(data => updateLED(data.led_status));
     });
 
-    setInterval(fetchData, 5000);
+    setInterval(() => {
+        fetchData(); 
+        fetchLightData();},
+        1000);
     updateLED("{{ led_status }}");
     updateFan("{{ fan_status }}");
 };
@@ -52,7 +55,7 @@ function initializeGauges() {
         id: "luminosity-gauge",
         value: -1,
         min: 0,
-        max: 1000,
+        max: 5000,
         reverse: true,
         title: "Luminosity",
         gaugeWidthScale: 0.5,
@@ -67,14 +70,31 @@ function fetchData() {
             return response.json();
         })
         .then(data => {
-            if (data.temperature && data.humidity && data.luminosity) {
+            if (data.temperature) {
                 // Update the gauges with values
                 temperatureGauge.refresh(data.temperature);
-                humidityGauge.refresh(data.humidity);
-                luminosityGauge.refresh(data.luminosity);
 
-                // Check if the fan should be toggled ON
                 updateFan("{{ fan_status }}", "{{ fan_switch_requested }}");
+            }
+            if (data.humidity) {
+                // Update the gauges with values
+                humidityGauge.refresh(data.humidity);
+            }
+        })
+        .catch(error => console.error('Error fetching sensor data:', error));
+}
+
+function fetchLightData() {
+    fetch('/light_data')
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+
+            if (data.luminosity) {
+                // Update the gauges with values
+                luminosityGauge.refresh(data.luminosity);
             }
         })
         .catch(error => console.error('Error fetching sensor data:', error));
