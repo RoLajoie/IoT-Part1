@@ -59,7 +59,7 @@ function initializeGauges() {
         reverse: true,
         title: "Luminosity",
         gaugeWidthScale: 0.5,
-        levelColors: ["#2a2a2a","#d1cfb6", "#f7f697"],
+        levelColors: ["#f7f697","#d1cfb6", "#2a2a2a"],
     });
 }
 
