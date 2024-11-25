@@ -4,8 +4,8 @@ from gpiozero import DigitalOutputDevice
 from flask import Flask, render_template, request, jsonify
 import atexit
 import paho.mqtt.client as mqtt
-# from Freenove_DHT import DHT
-from mock_dht import DHT #MOCK: simulates DHT
+from Freenove_DHT import DHT
+# from mock_dht import DHT #MOCK: simulates DHT
 import smtplib
 from email.mime.text import MIMEText
 from threading import Thread
@@ -41,7 +41,7 @@ dht_sensor = DHT(DHT_PIN)
 
 
 # MQTT configuration
-MQTT_BROKER = '192.168.55.131'
+MQTT_BROKER = '192.168.101.131'
 # MQTT_BROKER = 'localhost' # MOCK: localhost :)
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'

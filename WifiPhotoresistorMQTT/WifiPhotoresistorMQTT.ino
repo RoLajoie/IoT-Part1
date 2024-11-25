@@ -2,11 +2,17 @@
 #include <WiFiMulti.h>
 #include <PubSubClient.h>
 
+#include <SPI.h>
+#include <MFRC522.h>
+// Define pins for RFID
+#define SS_PIN 5 // SDA Pin on RC522
+#define RST_PIN 4 // RST Pin on RC522
+MFRC522 rfid(SS_PIN, RST_PIN); // Create MFRC522 instance
 WiFiMulti WiFiMulti;
 
 // Define the pin for the photoresistor
 const int photoresistorPin = 32; // Analog pin
-const char* mqtt_server = "192.168.55.131";
+const char* mqtt_server = "192.168.101.131";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -58,6 +64,10 @@ void setup() {
 
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
+
+  SPI.begin(); // Initialize SPI bus
+rfid.PCD_Init(); // Initialize MFRC522 reader
+Serial.println("Place your RFID card near the reader...");
 }
 
 void loop() {
@@ -69,7 +79,7 @@ void loop() {
   // Read the value from the photoresistor
   int lightValue = analogRead(photoresistorPin);
 
-    // Convert the light intensity value to a string
+  // Convert the light intensity value to a string
   char message[10]; // Allocate enough space for the number
   snprintf(message, sizeof(message), "%d", lightValue);
 
@@ -81,4 +91,28 @@ void loop() {
 
   // Delay between readings
   delay(2000); // Adjust the delay as needed
+
+  // Look for new cards
+  if (!rfid.PICC_IsNewCardPresent() || !rfid.PICC_ReadCardSerial()) {
+    return;
+  }
+
+  // Create a string to store the UID
+  String uid = "";
+  for (byte i = 0; i < rfid.uid.size; i++) {
+    if (rfid.uid.uidByte[i] < 0x10) {
+      uid += "0"; // Add leading zero for single-digit bytes
+    }
+    uid += String(rfid.uid.uidByte[i], HEX);
+  }
+
+  // Print UID to serial monitor
+  Serial.print("Card UID: ");
+  Serial.println(uid);
+
+  // Publish the UID as the message to the MQTT topic
+  client.publish("home/rfid", uid.c_str());
+
+  // Halt PICC
+  rfid.PICC_HaltA();
 }
