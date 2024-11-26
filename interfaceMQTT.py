@@ -1,7 +1,7 @@
 import RPi.GPIO as GPIO
 #import mock_gpio as GPIO #MOCK: simulate GPIO
 from gpiozero import DigitalOutputDevice
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 import atexit
 import paho.mqtt.client as mqtt
 from Freenove_DHT import DHT
@@ -15,6 +15,8 @@ from email.message import EmailMessage
 import imaplib
 import email
 from email.header import decode_header
+import sqlite3
+
 
 # Define pin assignments
 LED_PIN = 12    # LED control pin
@@ -41,8 +43,8 @@ dht_sensor = DHT(DHT_PIN)
 
 
 # MQTT configuration
-MQTT_BROKER = '192.168.101.131'
-# MQTT_BROKER = 'localhost' # MOCK: localhost :)
+#MQTT_BROKER = '192.168.101.131'
+MQTT_BROKER = 'localhost' # MOCK: localhost :)
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
 MQTT_TOPIC_LIGHT = 'home/light'
@@ -55,6 +57,64 @@ email_sent = False
 # Dynamic Light Related Variables
 light_intensity = 0
 light_email_sent = False
+
+# -------------------------------------------------------------------------------------------------------------------------->
+
+# TODO: 
+# Database implementation 
+# When an new RFID tag shows up 
+#
+
+
+def init_db():
+    conn = sqlite3.connect('smart_home.db')
+    cursor = conn.cursor()
+    
+    # Create the users table if it doesn't exist
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            rfid_tag TEXT PRIMARY KEY,
+            temperature_threshold INTEGER DEFAULT 24,
+            light_intensity_threshold INTEGER DEFAULT 400
+        )
+    ''')
+    
+    # Insert a default user if no users exist
+    cursor.execute('''
+        INSERT OR IGNORE INTO users (rfid_tag, temperature_threshold, light_intensity_threshold)
+        VALUES (?, ?, ?)
+    ''', ('default_user', 24, 400))
+    
+    conn.commit()
+    conn.close()
+
+
+
+
+# Retrieve user data
+def get_user(rfid_tag):
+    conn = sqlite3.connect('smart_home.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM users WHERE rfid_tag = ?', (rfid_tag,))
+    user = cursor.fetchone()
+    conn.close()
+    return user
+
+def update_user_preferences(rfid_tag, temp_threshold, light_threshold):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # SQL query to update user preferences by RFID
+    query = '''
+    UPDATE users
+    SET temperature_threshold = ?, lighting_threshold = ?
+    WHERE id = ?
+    '''
+    cursor.execute(query, (temp_threshold, light_threshold, rfid_tag))
+    conn.commit()  # Commit the changes
+    conn.close()
+
+# -------------------------------------------------------------------------------------------------------------------------->
 
 def send_email(temperature):
     global email_sent
@@ -127,6 +187,7 @@ def send_light_email():
             server.sendmail(msg['From'], [msg['To']], msg.as_string())
         print('Email sent')
 
+# -------------------------------------------------------------------------------------------------------------------------->
 
 
 # MQTT setup
@@ -168,6 +229,7 @@ def on_message(client, userdata, msg):
         try:
             rfid = msg.payload.decode()
             print(f"RFID Detected: {rfid}")
+
         except ValueError:
             print(f"Invalid RFID Value: {msg.payload.decode}")
 
@@ -213,9 +275,16 @@ mqtt_client.subscribe(MQTT_TOPIC_LIGHT)  # Subscribe to the light intensity topi
 mqtt_client.subscribe(MQTT_TOPIC_RFID)
 
 # Route to render the dashboard
+@app.before_first_request
+def setup():
+    # Initialize the database
+    init_db()
+    conn = sqlite3.connect('smart_home.db')
+    cursor = conn.cursor()
+
 @app.route('/')
 def index():
-    return render_template('dashboard.html', led_status=led_state, fan_status=fan_state, fan_switch_requested=fan_switch_on, light_email_sent = light_email_sent)
+    return render_template('dashboard.html', led_status=led_state, fan_status=fan_state, fan_switch_requested=fan_switch_on, light_email_sent=light_email_sent)
 
 # Route to toggle LED via MQTT
 @app.route('/toggle_led/<state>', methods=['POST'])
@@ -244,6 +313,7 @@ def on_exit():
     GPIO.cleanup()
     mqtt_client.publish(MQTT_TOPIC_LED, 'OFF')
     mqtt_client.publish(MQTT_TOPIC_FAN, 'OFF')
+    mqtt_client.publish(MQTT_TOPIC_RFID, 'OFF')
 
 @app.route('/sensor_data')
 def sensor_data():
@@ -272,8 +342,72 @@ def check_email_notification():
     else:
         return jsonify({'message': None}), 200
 
+#------------------------------------------------------------------------------->
 
-atexit.register(on_exit)
+# Auto filling the form's information 
+@app.route('/fetch_user', methods=['POST'])
+def fetch_user(): 
+     
+    # replace this wwith logic to check for the scannd RFID tag
+    rfid_tag = request.json.get('rfid_tag')
+    
+    # If an RFID tag is provided, fetch the specific user
+    if rfid_tag:
+        user = get_user(rfid_tag)
+    else:
+        # If no RFID tag is provided, fetch the first entry in the database
+        conn = sqlite3.connect('smart_home.db')
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users ORDER BY rfid_tag ASC LIMIT 1')
+        user = cursor.fetchone()
+        conn.close()
+    
+    # If a user is found, return their details
+    if user:
+        return jsonify({
+            'rfid_tag': user[0], 
+            'temperature_threshold': user[1],  
+            'lighting_intensity_threshold': user[2],  
+        })
+    else:
+        return jsonify({'error': 'No users found in the database'}), 404
+
+
+# when you submit the form, this method triggers and updates info 
+
+@app.route('/add_or_update_user', methods=['POST'])
+def add_or_update_user():    
+    # Get data from the form submission
+    temp_threshold = request.form.get('tempForm')
+    light_threshold = request.form.get('lightForm')
+    rfid_tag = request.form.get('rfid_tag')
+    
+    # Ensure the required fields are provided
+    if not rfid_tag:
+        return jsonify({"error": "RFID tag is missing"}), 400
+    if not temp_threshold or not light_threshold:
+        return jsonify({"error": "Temperature or Light Intensity thresholds are missing"}), 400
+
+    # Establish a connection to the database
+    conn = sqlite3.connect('smart_home.db')
+    cursor = conn.cursor()
+
+    # SQL query to update user preferences by RFID
+    query = '''
+    UPDATE users
+    SET temperature_threshold = ?, light_intensity_threshold = ?
+    WHERE rfid_tag = ?
+    '''
+    cursor.execute(query, (temp_threshold, light_threshold, rfid_tag))
+    conn.commit()  # Commit the changes
+    conn.close()
+
+    # Redirect to the dashboard after updating
+    return redirect(url_for('index'))
+
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)

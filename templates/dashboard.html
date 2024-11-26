@@ -10,9 +10,13 @@
     <link rel="stylesheet" target=_blank href="{{ url_for('static', filename='css/dashboard.css') }}">
 </head>
 <body>
+    <h1>Smart Home IoT Dashboard</h1>
+    <h2 id="header2"></h2>
     <div class="dashboard-container">
-        <h1>Smart Home IoT Dashboard</h1>
         
+        
+        <div class="lightContainer">
+
         <p id="led-status">LED Status: {{ led_status }}</p>
         
         <div class="toggle-switch-container">
@@ -23,23 +27,66 @@
             </label>
         </div>
         
+        <img id="light-image" src="/static/images/dark.png" alt="Light Status" class="dark">
+            
+        </div>
+        
         <div class="data-container">
-            <img id="light-image" src="/static/images/dark.png" alt="Light Status" class="dark">
             
             <!-- All Gauges -->
             <div id="temperature-gauge" class="gauge"></div>
             <div id="humidity-gauge" class="gauge"></div>
+            
+        </div>
+
+        <div class="luminosity-container">
             <div id="luminosity-gauge" class="gauge"></div>
+        </div>
 
+        <div class="userInfo">
+            <h1>Preferences</h1>
+            
+            <form action="/add_or_update_user" method="POST">
+                <label for="tempForm">Temperature Threshold:</label><br>
+                <input type="text" id="tempForm" name="tempForm" placeholder="Enter Temperature"><br>
+                
+                <label for="lightForm">Lighting Intensity Threshold:</label><br>
+                <input type="text" id="lightForm" name="lightForm" placeholder="Enter Light Intensity"><br>
+                
+                <input type="hidden" id="rfid_tag" name="rfid_tag" value="">
 
+                
+                <input type="submit" value="Submit">
+            </form>
+        </div>
+        
+        <div class="fan-status-container">
             <p id="fan-status">Fan Status: {{ fan_status }}</p>
             <img id="fan-icon" src="/static/images/fan-off.webp" alt="Fan Status" class="off">
         </div>
+
+        <div class="notifications-container">
+            <h3>Notifications</h3>
+            <p id="email-status">Lighting Email Sent: {{ light_email_sent }}</p>
+        </div>
+
         
-        <footer>
-            By: Rowan Lajoie, Maxim Rotaru, Daniel Levitin
-        </footer>
     </div>
+    <footer>
+        By: Rowan Lajoie, Maxim Rotaru, Daniel Levitin
+    </footer>
 </body>
 </html>
  
+
+
+<!-- 
+userID
+RFID Tag Number 
+Temperature Threshhold 
+Light intensity Threshold 
+
+<p>RFID Tag: {{ user_prefs.rfid_tag if user_prefs else 'Not Set' }}</p>
+            <p>Temperature Threshold: {{ user_prefs.temperature_threshold if user_prefs else 'Not Set' }}°C</p>
+            <p>Lighting Intensity Threshold: {{ user_prefs.light_intensity_threshold if user_prefs else 'Not Set' }}</p>
+-->

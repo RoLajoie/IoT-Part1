@@ -142,3 +142,37 @@ function checkEmailNotification() {
         })
         .catch(error => console.error('Error checking email notification:', error));
 }
+
+// Function to fetch data and populate form fields
+function autoPopulateForm() {
+    fetch('/fetch_user', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        // Empty body to indicate no RFID tag was scanned
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            console.error('Error fetching user data:', data.error);
+            alert('Could not load user data: ' + data.error);
+        } else {
+            // Populate form fields with fetched data
+            document.getElementById('tempForm').value = data.temperature_threshold || '';
+            document.getElementById('lightForm').value = data.lighting_intensity_threshold || '';
+            document.getElementById('rfid_tag').value = data.rfid_tag || '';
+            document.getElementById('header2').innerText = data.rfid_tag || '';  
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching user data:', error);
+        alert('An error occurred while fetching user data.');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    autoPopulateForm();
+});
+
