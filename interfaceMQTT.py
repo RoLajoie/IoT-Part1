@@ -46,6 +46,7 @@ MQTT_BROKER = '192.168.101.131'
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
 MQTT_TOPIC_LIGHT = 'home/light'
+MQTT_TOPIC_RFID = 'home/rfid'
 # State machines for fan and friends
 led_state = 'OFF'
 fan_state = 'OFF'
@@ -163,6 +164,12 @@ def on_message(client, userdata, msg):
                 light_email_sent = False
         except ValueError:
             print(f"Invalid light intensity value received: {msg.payload.decode()}")
+    elif msg.topic == MQTT_TOPIC_RFID:
+        try:
+            rfid = msg.payload.decode()
+            print(f"RFID Detected: {rfid}")
+        except ValueError:
+            print(f"Invalid RFID Value: {msg.payload.decode}")
 
 
 
@@ -203,6 +210,7 @@ Thread(target=check_email_responses, daemon=True).start()
 
 mqtt_client.on_message = on_message  # Attach the handler
 mqtt_client.subscribe(MQTT_TOPIC_LIGHT)  # Subscribe to the light intensity topic
+mqtt_client.subscribe(MQTT_TOPIC_RFID)
 
 # Route to render the dashboard
 @app.route('/')
