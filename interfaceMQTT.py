@@ -1,5 +1,5 @@
 import RPi.GPIO as GPIO
-#import mock_gpio as GPIO #MOCK: simulate GPIO
+# import mock_gpio as GPIO #MOCK: simulate GPIO
 from gpiozero import DigitalOutputDevice
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import atexit
@@ -150,36 +150,40 @@ def check_email_responses():
     global fan_switch_on
     while True:
         try:
-            
             mail = imaplib.IMAP4_SSL("imap.gmail.com")
             mail.login(username, imap_password)
             mail.select("inbox")
 
-            # For email respond in the subject 
-            status, messages = mail.search(None, 'SUBJECT "Re:"')
+            # Search for all messages in the inbox
+            status, messages = mail.search(None, 'ALL')
             email_ids = messages[0].split()
 
-            # Fetch and process each reply
+            # Fetch and process each email
             for email_id in email_ids:
+                # Decode email_id, since imaplib returns a byte string
+                email_id = email_id.decode()
+
                 res, msg_data = mail.fetch(email_id, "(RFC822)")
                 msg = email.message_from_bytes(msg_data[0][1])
                 
-                # Decode subject
-                subject, encoding = decode_header(msg["Subject"])[0]
-                if isinstance(subject, bytes):
-                    subject = subject.decode(encoding if encoding else 'utf-8')
+                # First we try to extract the body
+                body = msg.get_payload(decode=True)
 
-                # Check for "Yes" in the subject
-                if "Yes" in subject:
+                # Next we check if body exists and decode it
+                if body is None:
+                    continue
+                body = body.decode()
+
+                # Check for "Yes" in the email body
+                if "Yes" in body:
                     print("Yes detected in response, activating FAN")
                     mail.store(email_id, '+FLAGS', '\\Deleted')
                     mail.expunge()
                     GPIO.output(FAN_PIN, GPIO.HIGH)
                     fan_switch_on = True
-
            
             mail.logout()
-            time.sleep(10)  
+            time.sleep(10)
 
         except Exception as e:
             print(f"Error checking emails: {e}")
@@ -411,7 +415,17 @@ def check_email_notification():
 
 # Auto filling the form's information 
 @app.route('/fetch_user', methods=['POST'])
-def fetch_user(): 
+def fetch_user():
+    # For mock RFID
+    # return jsonify({
+    #         'id': '83adf703',
+    #         'username': 'Maxim1',
+    #         'email': 'maximrotaru16@gmail.com',
+    #         'rfid_tag': '83adf703',
+    #         'temperature_threshold': 24,  
+    #         'lighting_intensity_threshold': 400,  
+    # })
+    
     rfid_tag = request.json.get('rfid_tag')
     
     if rfid_tag:

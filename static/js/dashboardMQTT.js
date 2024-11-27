@@ -159,16 +159,18 @@ function autoPopulateForm() {
             console.error('Error fetching user data:', data.error);
             alert('Could not load user data: ' + data.error);
         } else {
+            console.log(data);
             // Populate form fields with fetched data
+            document.getElementById('rfid_tag').innerHTML += data.rfid_tag || '';
+            document.getElementById('username').innerHTML += data.username || '';
+            document.getElementById('email').innerHTML += data.email || '';
             document.getElementById('tempForm').value = data.temperature_threshold || '';
             document.getElementById('lightForm').value = data.lighting_intensity_threshold || '';
-            document.getElementById('rfid_tag').value = data.rfid_tag || '';
-            document.getElementById('header2').innerText = data.rfid_tag || '';  
         }
     })
     .catch(error => {
         console.error('Error fetching user data:', error);
-        alert('An error occurred while fetching user data.');
+        alert('An error occurred while populating page.');
     });
 }
 
