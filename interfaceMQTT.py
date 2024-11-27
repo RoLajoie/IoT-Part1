@@ -16,7 +16,7 @@ import imaplib
 import email
 from email.header import decode_header
 import sqlite3
-
+from bluetooth_helper import BluetoothHelper # Importing hte bluetooth file 
 
 # Define pin assignments
 LED_PIN = 12    # LED control pin
@@ -59,7 +59,9 @@ light_intensity = 0
 light_email_sent = False
 
 current_user = {}  # Global variable to store the current user's data
-
+current_rfid = ''; 
+bt_helper = BluetoothHelper()
+bluetooth_devices = bt_helper.get_bluetooth_devices()
 # -------------------------------------------------------------------------------------------------------------------------->
 
 # TODO: 
@@ -67,6 +69,8 @@ current_user = {}  # Global variable to store the current user's data
 # When an new RFID tag shows up 
 #
 
+def start_bluetooth_scan():
+    bt_helper.start_continuous_scan()
 
 def init_db():
     conn = sqlite3.connect('smart_home.db')
@@ -134,8 +138,8 @@ def send_email(temperature):
     if not email_sent:
         msg = MIMEText(f"The current temperature is {temperature}°C. Would you like to turn on the fan?")
         msg['Subject'] = 'Temperature Alert'
-        msg['From'] = 'whatisiot1@gmail.com'
-        msg['To'] = 'maximrotaru16@gmail.com'
+        msg['From'] = 'whatisiot1@gmail.com' 
+        msg['To'] = 'maximrotaru16@gmail.com' # MAKE DYNAMIC 
         # msg['To'] = 'levitind@gmail.com'
 
         
@@ -251,13 +255,14 @@ def on_message(client, userdata, msg):
         try:
             rfid = msg.payload.decode()
             print(f"RFID Detected: {rfid}")
-        
+            current_rfid = rfid 
             # Fetch user details from the database
             user = get_user(rfid)
         
             if user:
                 global current_user
                 current_user = {
+                    'rfid_tag': user[0],
                     'username': user[1],
                     'email': user[2],
                     'temp_threshold': user[4],
@@ -270,7 +275,7 @@ def on_message(client, userdata, msg):
                 notification_msg = f"""
                 Hello {current_user['username']},
     
-                Your preferences have been successfully activated:
+                Your preferences have been successfully activated at {time}:
                 - Temperature Threshold: {current_user['temp_threshold']}°C
                 - Light Intensity Threshold: {current_user['light_threshold']} lumens
     
@@ -338,6 +343,8 @@ def monitor_temperature():
 Thread(target=monitor_temperature, daemon=True).start()
 # Check email response thread
 Thread(target=check_email_responses, daemon=True).start()
+# Thread to do bluetooth
+Thread(target=start_bluetooth_scan, daemon=True).start()
 
 mqtt_client.on_message = on_message  # Attach the handler
 mqtt_client.subscribe(MQTT_TOPIC_LIGHT)  # Subscribe to the light intensity topic
@@ -353,8 +360,15 @@ def setup():
 
 @app.route('/')
 def index():
-    return render_template('dashboard.html', led_status=led_state, fan_status=fan_state, fan_switch_requested=fan_switch_on, light_email_sent=light_email_sent)
-
+    return render_template(
+        'dashboard.html', 
+        led_status=led_state, 
+        fan_status=fan_state, 
+        fan_switch_requested=fan_switch_on, 
+        light_email_sent=light_email_sent, 
+        devices=bluetooth_devices,
+        current_user=current_user  # Pass the current_user object to the template
+    )
 # Route to toggle LED via MQTT
 @app.route('/toggle_led/<state>', methods=['POST'])
 def toggle_led(state):
@@ -426,7 +440,14 @@ def fetch_user():
     #         'lighting_intensity_threshold': 400,  
     # })
     
+    ## THIS IS THE LINE THAT TRIES TO FIND RFID TAG GIVEN NEW INPUT 
+    ## rfid_tag = current_user['rfid_tag']; 
+    
+    ## Line that populates currently 
     rfid_tag = request.json.get('rfid_tag')
+
+    if current_rfid:
+        rfid_tag = current_rfid
     
     if rfid_tag:
         user = get_user(rfid_tag)
@@ -448,10 +469,6 @@ def fetch_user():
         })
     else:
         return jsonify({'error': 'No users found in the database'}), 404
-
-
-
-# when you submit the form, this method triggers and updates info 
 
 @app.route('/add_or_update_user', methods=['POST'])
 def add_or_update_user():
@@ -490,7 +507,10 @@ def add_or_update_user():
 
     return redirect(url_for('index'))
 
-
+# Flask Route to serve Bluetooth devices
+@app.route('/bluetooth_devices')
+def bluetooth_devices_list():
+    return jsonify(bluetooth_devices)
 
 
 

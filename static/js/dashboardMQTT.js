@@ -6,7 +6,7 @@ window.onload = () => {
     // TODO: if extra time, better to put a loader until there's info
     // Initialize everything first
     initializeGauges();
-
+    fetchBluetoothDevices(); 
     document.getElementById('toggle-switch').addEventListener('change', function() {
         let newState = this.checked ? 'ON' : 'OFF';
         fetch(`/toggle_led/${newState}`, {
@@ -177,4 +177,65 @@ function autoPopulateForm() {
 document.addEventListener('DOMContentLoaded', function () {
     autoPopulateForm();
 });
+
+let bluetoothDevices = []; // To hold all the Bluetooth devices
+        let currentIndex = 0; // To track the current set of devices to display
+
+        // Function to fetch Bluetooth devices from the Flask server
+        async function fetchBluetoothDevices() {
+            try {
+                const response = await fetch('/bluetooth_devices');
+                bluetoothDevices = await response.json();
+
+                if (bluetoothDevices.length > 0) {
+                    displayBluetoothDevices();
+                    updateDeviceCount(); // Update the device count when devices are fetched
+                } else {
+                    const deviceList = document.getElementById('device-list');
+                    deviceList.innerHTML = '<li>No Bluetooth devices found.</li>';
+                    updateDeviceCount(); // Update the device count when no devices are found
+                }
+            } catch (error) {
+                console.error('Error fetching Bluetooth devices:', error);
+            }
+        }
+
+        // Function to display 4 devices at a time
+        function displayBluetoothDevices() {
+            const deviceList = document.getElementById('device-list');
+            deviceList.innerHTML = ''; // Clear the current list
+
+            // Slice the bluetoothDevices array to get 4 devices starting from the current index
+            const devicesToShow = bluetoothDevices.slice(currentIndex, currentIndex + 4);
+
+            // Populate the list with the sliced devices
+            devicesToShow.forEach(device => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `Name: ${device.name}, Address: ${device.address}`;
+                deviceList.appendChild(listItem);
+            });
+        }
+
+        // Function to update the device count
+        function updateDeviceCount() {
+            const deviceCountElement = document.getElementById('device-count');
+            deviceCountElement.textContent = `Total Bluetooth Devices: ${bluetoothDevices.length}`;
+        }
+
+        // Function to cycle through the devices
+        function cycleDevices() {
+            if (bluetoothDevices.length === 0) return; // No devices to cycle through
+
+            // Move to the next set of 4 devices
+            currentIndex = (currentIndex + 4) % bluetoothDevices.length;
+
+            // If we are past the last set, we start from the beginning
+            if (currentIndex >= bluetoothDevices.length) {
+                currentIndex = 0;
+            }
+
+            displayBluetoothDevices();
+        }
+
+
 

@@ -64,6 +64,16 @@
             </form>
         </div>
         
+        <div id="bluetoothDevices">
+            <p id="device-count">Total Bluetooth Devices: 0</p>
+
+            <ul id="device-list">
+                <!-- Bluetooth devices will be displayed here -->
+            </ul>
+
+            <button onclick="cycleDevices()">Refresh Devices</button>
+        </div>
+        
         <div class="fan-status-container">
             <p id="fan-status">Fan Status: {{ fan_status }}</p>
             <img id="fan-icon" src="/static/images/fan-off.webp" alt="Fan Status" class="off">

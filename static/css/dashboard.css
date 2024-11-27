@@ -25,11 +25,132 @@ body {
     padding: 30px;
     text-align: center;
     overflow: hidden;
-    display: flex; 
-    justify-content: space-around; 
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
     align-items: flex-start;
 }
+/* Styling for Bluetooth Devices Section */
+#bluetoothDevices {
+    background-color: #e3f2fd; /* Light blue background to match the light container */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+}
 
+/* Title for Bluetooth Devices */
+#bluetoothDevices h2 {
+    font-size: 24px;
+    color: #1e88e5; /* Matching the title color with other sections */
+    margin-bottom: 20px;
+}
+
+/* Device count styling */
+#device-count {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+/* List of Bluetooth devices */
+#device-list {
+    list-style-type: none;
+    padding: 0;
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #333;
+}
+
+#device-list li {
+    margin-bottom: 10px;
+    padding: 5px;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Button styling */
+#bluetoothDevices button {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+#bluetoothDevices button:hover {
+    background-color: #45a049;
+}
+
+/* Responsive Styling for smaller screens */
+@media (max-width: 600px) {
+    #bluetoothDevices {
+        padding: 15px;
+        width: 90%;
+    }
+
+    #device-count {
+        font-size: 16px;
+    }
+
+    #device-list li {
+        font-size: 14px;
+    }
+
+    #bluetoothDevices button {
+        width: 100%;
+        font-size: 18px;
+    }
+}
+
+/* Notifications Container */
+.notifications-container {
+    background-color: #e3f2fd; /* Light blue background to match the light container */
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 600px;
+}
+
+/* Notifications Heading */
+.notifications-container h3 {
+    font-size: 24px;
+    color: #1e88e5; /* Matching the title color with other sections */
+    margin-bottom: 10px;
+}
+
+/* Email Status Styling */
+#email-status {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 500;
+    text-align: center; /* Centers the status text */
+}
+
+/* Responsive Styling for smaller screens */
+@media (max-width: 600px) {
+    .notifications-container {
+        padding: 15px;
+        width: 90%;
+    }
+
+    #email-status {
+        font-size: 16px;
+    }
+}
 
 
 h1 {
@@ -165,6 +286,16 @@ img#fan-icon {
     border-radius: 8px;
     box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
     margin-top: 20px;
+}
+
+.userInfo p {
+    margin: 10px; 
+    color:rgba(0, 0, 0, 1); 
+}
+
+.userInfo h2 {
+    font-size: 25px;
+    color: darkslateblue
 }
 
 .userInfo h1 {
