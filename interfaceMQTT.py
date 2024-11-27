@@ -58,6 +58,8 @@ email_sent = False
 light_intensity = 0
 light_email_sent = False
 
+current_user = {}  # Global variable to store the current user's data
+
 # -------------------------------------------------------------------------------------------------------------------------->
 
 # TODO: 
@@ -73,20 +75,29 @@ def init_db():
     # Create the users table if it doesn't exist
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-            rfid_tag TEXT PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            email TEXT NOT NULL,
+            rfid_tag TEXT UNIQUE NOT NULL,
             temperature_threshold INTEGER DEFAULT 24,
             light_intensity_threshold INTEGER DEFAULT 400
         )
     ''')
     
-    # Insert a default user if no users exist
+    # Insert default data
     cursor.execute('''
-        INSERT OR IGNORE INTO users (rfid_tag, temperature_threshold, light_intensity_threshold)
-        VALUES (?, ?, ?)
-    ''', ('default_user', 24, 400))
+        INSERT OR IGNORE INTO users (username, email, rfid_tag, temperature_threshold, light_intensity_threshold)
+        VALUES (?, ?, ?, ?, ?)
+    ''', ('Maxim1', 'maximrotaru16@gmail.com', '83adf703', 24, 400))
+    
+    cursor.execute('''
+        INSERT OR IGNORE INTO users (username, email, rfid_tag, temperature_threshold, light_intensity_threshold)
+        VALUES (?, ?, ?, ?, ?)
+    ''', ('Maxim2', 'lemonboysomething@gmail.com', 'a43a1051', 23, 500))
     
     conn.commit()
     conn.close()
+
 
 
 
@@ -98,21 +109,23 @@ def get_user(rfid_tag):
     cursor.execute('SELECT * FROM users WHERE rfid_tag = ?', (rfid_tag,))
     user = cursor.fetchone()
     conn.close()
-    return user
+    return user 
+
 
 def update_user_preferences(rfid_tag, temp_threshold, light_threshold):
-    conn = get_db()
+    conn = sqlite3.connect('smart_home.db')  # Use sqlite3.connect directly
     cursor = conn.cursor()
     
     # SQL query to update user preferences by RFID
     query = '''
     UPDATE users
-    SET temperature_threshold = ?, lighting_threshold = ?
-    WHERE id = ?
+    SET temperature_threshold = ?, light_intensity_threshold = ?
+    WHERE rfid_tag = ?
     '''
     cursor.execute(query, (temp_threshold, light_threshold, rfid_tag))
     conn.commit()  # Commit the changes
     conn.close()
+
 
 # -------------------------------------------------------------------------------------------------------------------------->
 
@@ -173,19 +186,24 @@ def check_email_responses():
 
 def send_light_email():
     global light_email_sent
-    if not light_email_sent:
-        msg = MIMEText(f"Dark room detected. LED Light has been activated")
+    global current_user
+    
+    if not light_email_sent and 'email' in current_user:
+        msg = MIMEText(f"Dark room detected. LED Light has been activated.")
         msg['Subject'] = 'LED Enabled'
         msg['From'] = 'whatisiot1@gmail.com'
-        msg['To'] = 'maximrotaru16@gmail.com'
-        #msg['To'] = 'rowanlajoie04@gmail.com'
-
+        msg['To'] = current_user['email']  # Send email to the current user
         
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.starttls()
-            server.login('whatisiot1@gmail.com', 'ayvi plyw mqzd vrtz')
-            server.sendmail(msg['From'], [msg['To']], msg.as_string())
-        print('Email sent')
+        try:
+            with smtplib.SMTP('smtp.gmail.com', 587) as server:
+                server.starttls()
+                server.login('whatisiot1@gmail.com', 'ayvi plyw mqzd vrtz')
+                server.sendmail(msg['From'], [msg['To']], msg.as_string())
+            print(f"Light activation email sent to {current_user['email']}")
+            light_email_sent = True
+        except Exception as e:
+            print(f"Failed to send email: {e}")
+
 
 # -------------------------------------------------------------------------------------------------------------------------->
 
@@ -207,31 +225,78 @@ imap_password = "ayvi plyw mqzd vrtz"
 app = Flask(__name__)
 
 def on_message(client, userdata, msg):
-    global light_intensity, light_email_sent
+    global light_intensity, light_email_sent, led_state, fan_state, fan_switch_on, email_sent
+
     if msg.topic == MQTT_TOPIC_LIGHT:
         try:
             light_intensity = int(msg.payload.decode())  # Decode and store the light intensity value
             print(f"Received light intensity: {light_intensity}")
             if light_intensity > 400 and not light_email_sent:
-                # Update LED state and GPIO directly
                 led_state = 'ON'
                 GPIO.output(LED_PIN, GPIO.HIGH)
                 send_light_email()
                 light_email_sent = True
             elif light_intensity <= 400:
-                # Turn off LED if the light intensity is above the threshold
                 led_state = 'OFF'
                 GPIO.output(LED_PIN, GPIO.LOW)
                 light_email_sent = False
         except ValueError:
             print(f"Invalid light intensity value received: {msg.payload.decode()}")
+    
     elif msg.topic == MQTT_TOPIC_RFID:
         try:
             rfid = msg.payload.decode()
             print(f"RFID Detected: {rfid}")
-
+        
+            # Fetch user details from the database
+            user = get_user(rfid)
+        
+            if user:
+                global current_user
+                current_user = {
+                    'username': user[1],
+                    'email': user[2],
+                    'temp_threshold': user[4],
+                    'light_threshold': user[5]
+                }
+            
+                print(f"Switched to preferences for user: {current_user['username']}")
+                
+                # Notify the user via email
+                notification_msg = f"""
+                Hello {current_user['username']},
+    
+                Your preferences have been successfully activated:
+                - Temperature Threshold: {current_user['temp_threshold']}°C
+                - Light Intensity Threshold: {current_user['light_threshold']} lumens
+    
+                Thank you,
+                Beep boop smart IoT system
+                """
+                send_email_to_user(current_user['email'], "Preferences Activated", notification_msg)
+            else:
+                print("No user found with this RFID tag.")
         except ValueError:
-            print(f"Invalid RFID Value: {msg.payload.decode}")
+            print(f"Invalid RFID Value: {msg.payload.decode()}")
+
+
+
+def send_email_to_user(to_email, subject, message):
+    try:
+        msg = MIMEText(message)
+        msg['Subject'] = subject
+        msg['From'] = 'whatisiot1@gmail.com'
+        msg['To'] = to_email
+
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            server.login('whatisiot1@gmail.com', 'ayvi plyw mqzd vrtz')
+            server.sendmail(msg['From'], [to_email], msg.as_string())
+        
+        print(f"Email sent to {to_email}")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+
 
 
 
@@ -347,62 +412,68 @@ def check_email_notification():
 # Auto filling the form's information 
 @app.route('/fetch_user', methods=['POST'])
 def fetch_user(): 
-     
-    # replace this wwith logic to check for the scannd RFID tag
     rfid_tag = request.json.get('rfid_tag')
     
-    # If an RFID tag is provided, fetch the specific user
     if rfid_tag:
         user = get_user(rfid_tag)
     else:
-        # If no RFID tag is provided, fetch the first entry in the database
         conn = sqlite3.connect('smart_home.db')
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users ORDER BY rfid_tag ASC LIMIT 1')
+        cursor.execute('SELECT * FROM users ORDER BY id ASC LIMIT 1')
         user = cursor.fetchone()
         conn.close()
     
-    # If a user is found, return their details
     if user:
         return jsonify({
-            'rfid_tag': user[0], 
-            'temperature_threshold': user[1],  
-            'lighting_intensity_threshold': user[2],  
+            'id': user[0],
+            'username': user[1],
+            'email': user[2],
+            'rfid_tag': user[3],
+            'temperature_threshold': user[4],  
+            'lighting_intensity_threshold': user[5],  
         })
     else:
         return jsonify({'error': 'No users found in the database'}), 404
 
 
+
 # when you submit the form, this method triggers and updates info 
 
 @app.route('/add_or_update_user', methods=['POST'])
-def add_or_update_user():    
-    # Get data from the form submission
+def add_or_update_user():
+    username = request.form.get('username')
+    email = request.form.get('email')
+    rfid_tag = request.form.get('rfid_tag')
     temp_threshold = request.form.get('tempForm')
     light_threshold = request.form.get('lightForm')
-    rfid_tag = request.form.get('rfid_tag')
     
-    # Ensure the required fields are provided
-    if not rfid_tag:
-        return jsonify({"error": "RFID tag is missing"}), 400
-    if not temp_threshold or not light_threshold:
-        return jsonify({"error": "Temperature or Light Intensity thresholds are missing"}), 400
+    if not all([username, email, rfid_tag, temp_threshold, light_threshold]):
+        return jsonify({"error": "All fields are required"}), 400
 
-    # Establish a connection to the database
     conn = sqlite3.connect('smart_home.db')
     cursor = conn.cursor()
 
-    # SQL query to update user preferences by RFID
-    query = '''
-    UPDATE users
-    SET temperature_threshold = ?, light_intensity_threshold = ?
-    WHERE rfid_tag = ?
-    '''
-    cursor.execute(query, (temp_threshold, light_threshold, rfid_tag))
-    conn.commit()  # Commit the changes
+    # Check if user exists
+    cursor.execute('SELECT * FROM users WHERE rfid_tag = ?', (rfid_tag,))
+    user = cursor.fetchone()
+
+    if user:
+        # Update existing user
+        cursor.execute('''
+            UPDATE users
+            SET username = ?, email = ?, temperature_threshold = ?, light_intensity_threshold = ?
+            WHERE rfid_tag = ?
+        ''', (username, email, temp_threshold, light_threshold, rfid_tag))
+    else:
+        # Insert new user
+        cursor.execute('''
+            INSERT INTO users (username, email, rfid_tag, temperature_threshold, light_intensity_threshold)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (username, email, rfid_tag, temp_threshold, light_threshold))
+
+    conn.commit()
     conn.close()
 
-    # Redirect to the dashboard after updating
     return redirect(url_for('index'))
 
 
