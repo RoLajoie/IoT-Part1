@@ -43,8 +43,8 @@ dht_sensor = DHT(DHT_PIN)
 
 
 # MQTT configuration
-#MQTT_BROKER = '192.168.101.131'
-MQTT_BROKER = 'localhost' # MOCK: localhost :)
+MQTT_BROKER = '192.168.101.131'
+#MQTT_BROKER = 'localhost' # MOCK: localhost :)
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
 MQTT_TOPIC_LIGHT = 'home/light'
@@ -168,24 +168,35 @@ def check_email_responses():
                 email_id = email_id.decode()
 
                 res, msg_data = mail.fetch(email_id, "(RFC822)")
-                msg = email.message_from_bytes(msg_data[0][1])
-                
-                # First we try to extract the body
-                body = msg.get_payload(decode=True)
+                for response_part in msg_data:
+                    if isinstance(response_part, tuple):
+                        msg = email.message_from_bytes(response_part[1])
+                        body = None
 
-                # Next we check if body exists and decode it
-                if body is None:
-                    continue
-                body = body.decode()
+                        # If the message is multipart, find the plain-text part
+                        if msg.is_multipart():
+                            for part in msg.walk():
+                                content_type = part.get_content_type()
+                                content_disposition = str(part.get("Content-Disposition"))
 
-                # Check for "Yes" in the email body
-                if "Yes" in body:
-                    print("Yes detected in response, activating FAN")
-                    mail.store(email_id, '+FLAGS', '\\Deleted')
-                    mail.expunge()
-                    GPIO.output(FAN_PIN, GPIO.HIGH)
-                    fan_switch_on = True
-           
+                                if content_type == "text/plain" and "attachment" not in content_disposition:
+                                    body = part.get_payload(decode=True).decode()  # Decode the body
+                                    break
+                        else:
+                            # If not multipart, get the payload directly
+                            body = msg.get_payload(decode=True).decode()
+
+                        if body:
+                           # print(f"Email body: {body}")
+
+                            # Check for "Yes" in the email body
+                            if "Yes" in body:
+                                print("Yes detected in response, activating FAN")
+                                mail.store(email_id, '+FLAGS', '\\Deleted')
+                                mail.expunge()
+                                GPIO.output(FAN_PIN, GPIO.HIGH)
+                                fan_switch_on = True
+
             mail.logout()
             time.sleep(10)
 
