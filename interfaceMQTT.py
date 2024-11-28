@@ -135,11 +135,12 @@ def update_user_preferences(rfid_tag, temp_threshold, light_threshold):
 
 def send_email(temperature):
     global email_sent
+    global current_user
     if not email_sent:
         msg = MIMEText(f"The current temperature is {temperature}°C. Would you like to turn on the fan?")
         msg['Subject'] = 'Temperature Alert'
         msg['From'] = 'whatisiot1@gmail.com' 
-        msg['To'] = 'maximrotaru16@gmail.com' # MAKE DYNAMIC 
+        msg['To'] = current_user['email'] 
         # msg['To'] = 'levitind@gmail.com'
 
         
