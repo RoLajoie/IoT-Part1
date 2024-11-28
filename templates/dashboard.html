@@ -7,49 +7,22 @@
     <script src="{{ url_for('static', filename='js/justgage-1.2.2/raphael-2.1.4.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/justgage-1.2.2/justgage.js') }}"></script>
     <script src="{{ url_for('static', filename='js/dashboardMQTT.js') }}"></script>
-    <link rel="stylesheet" target=_blank href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" target=_blank href="{{ url_for('static', filename='css/dashboard-new.css') }}">
 </head>
 <body>
-    <h1>Smart Home IoT Dashboard</h1>
-    <div class="dashboard-container">
-        
-        
-        <div class="lightContainer">
+    <header class="dashboard-header">
+        <h1>Smart Home IoT Dashboard</h1>
+    </header>
 
-        <p id="led-status">LED Status: {{ led_status }}</p>
+    <main class="dashboard-main">
         
-        <div class="toggle-switch-container">
-            <span class="toggle-switch-label">Light Status:</span>
-            <label class="toggle-switch">
-                <input type="checkbox" id="toggle-switch" />
-                <span class="slider"></span>
-            </label>
-        </div>
-        
-        <img id="light-image" src="/static/images/dark.png" alt="Light Status" class="dark">
-            
-        </div>
-        
-        <div class="data-container">
-            
-            <!-- All Gauges -->
-            <div id="temperature-gauge" class="gauge"></div>
-            <div id="humidity-gauge" class="gauge"></div>
-            
-        </div>
-
-        <div class="luminosity-container">
-            <div id="luminosity-gauge" class="gauge"></div>
-        </div>
-
-        <div class="userInfo">
-            <h1>General Info</h1>
+        <div class="card userInfo">
+            <h1>User Info</h1>
             <h2 id="username">Hello </h2>
             <p id="rfid_tag">RFID Tag: </p>
             <p id="email">Email: </p><br>
 
             <h1>Preferences</h1>
-            
             <form action="/add_or_update_user" method="POST">
                 <label for="tempForm">Temperature Threshold:</label><br>
                 <input type="text" id="tempForm" name="tempForm" placeholder="Enter Temperature"><br>
@@ -63,8 +36,8 @@
                 <input type="submit" value="Submit">
             </form>
         </div>
-        
-        <div id="bluetoothDevices">
+            
+        <div class="card" id="bluetoothDevices">
             <p id="device-count">Total Bluetooth Devices: 0</p>
 
             <ul id="device-list">
@@ -73,20 +46,44 @@
 
             <button onclick="cycleDevices()">Refresh Devices</button>
         </div>
-        
-        <div class="fan-status-container">
-            <p id="fan-status">Fan Status: {{ fan_status }}</p>
-            <img id="fan-icon" src="/static/images/fan-off.webp" alt="Fan Status" class="off">
-        </div>
 
-        <div class="notifications-container">
-            <h3>Notifications</h3>
-            <p id="email-status">Lighting Email Sent: {{ light_email_sent }}</p>
-        </div>
+            <div class="card lightContainer">
 
-        
-    </div>
-    <footer>
+                <p id="led-status">LED Status: {{ led_status }}</p>
+                
+                <div class="toggle-switch-container">
+                    <span class="toggle-switch-label">Light Status:</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggle-switch" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <img id="light-image" src="/static/images/dark.png" alt="Light Status" class="dark">
+                
+            </div>
+            
+            <div class="card data-container">
+                <!-- DHT Gauges -->
+                <div id="temperature-gauge" class="gauge"></div>
+                <div id="humidity-gauge" class="gauge"></div>
+            </div>
+
+            <div class="card luminosity-container">
+                <div id="luminosity-gauge" class="gauge"></div>
+            </div>
+            
+            <div class="card fan-status-container">
+                <p id="fan-status">Fan Status: {{ fan_status }}</p>
+                <img id="fan-icon" src="/static/images/fan-off.webp" alt="Fan Status" class="off">
+            </div>
+
+            <div class="card notifications-container">
+                <h3>Notifications</h3>
+                <p id="email-status">Lighting Email Sent: {{ light_email_sent }}</p>
+            </div>
+    </main>
+    <footer class="dashboard-footer">
         By: Rowan Lajoie, Maxim Rotaru, Daniel Levitin
     </footer>
 </body>
