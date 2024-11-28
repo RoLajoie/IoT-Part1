@@ -59,7 +59,7 @@ light_intensity = 0
 light_email_sent = False
 
 current_user = {}  # Global variable to store the current user's data
-current_rfid = ''; 
+current_rfid = '83adf703'; 
 bt_helper = BluetoothHelper()
 bluetooth_devices = bt_helper.get_bluetooth_devices()
 # -------------------------------------------------------------------------------------------------------------------------->
@@ -233,7 +233,7 @@ imap_password = "ayvi plyw mqzd vrtz"
 app = Flask(__name__)
 
 def on_message(client, userdata, msg):
-    global light_intensity, light_email_sent, led_state, fan_state, fan_switch_on, email_sent
+    global light_intensity, light_email_sent, led_state, fan_state, fan_switch_on, email_sent, current_rfid
 
     if msg.topic == MQTT_TOPIC_LIGHT:
         try:
@@ -430,6 +430,7 @@ def check_email_notification():
 # Auto filling the form's information 
 @app.route('/fetch_user', methods=['POST'])
 def fetch_user():
+    global current_user
     # For mock RFID
     # return jsonify({
     #         'id': '83adf703',
@@ -450,22 +451,22 @@ def fetch_user():
         rfid_tag = current_rfid
     
     if rfid_tag:
-        user = get_user(rfid_tag)
+        current_user = get_user(rfid_tag)
     else:
         conn = sqlite3.connect('smart_home.db')
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM users ORDER BY id ASC LIMIT 1')
-        user = cursor.fetchone()
+        currrent_user = cursor.fetchone()
         conn.close()
     
-    if user:
+    if current_user:
         return jsonify({
-            'id': user[0],
-            'username': user[1],
-            'email': user[2],
-            'rfid_tag': user[3],
-            'temperature_threshold': user[4],  
-            'lighting_intensity_threshold': user[5],  
+            'id': current_user[0],
+            'username': current_user[1],
+            'email': current_user[2],
+            'rfid_tag': current_user[3],
+            'temperature_threshold': current_user[4],  
+            'lighting_intensity_threshold': current_user[5],  
         })
     else:
         return jsonify({'error': 'No users found in the database'}), 404
@@ -511,8 +512,6 @@ def add_or_update_user():
 @app.route('/bluetooth_devices')
 def bluetooth_devices_list():
     return jsonify(bluetooth_devices)
-
-
 
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False)

@@ -144,6 +144,7 @@ function checkEmailNotification() {
 }
 
 // Function to fetch data and populate form fields
+let currentRfid = localStorage.getItem('currentRfid') || "";
 function autoPopulateForm() {
     fetch('/fetch_user', {
         method: 'POST',
@@ -161,12 +162,23 @@ function autoPopulateForm() {
         } else {
             console.log(data);
             // Populate form fields with fetched data
-            document.getElementById('rfid_tag').innerHTML += data.rfid_tag || '';
-            document.getElementById('username').innerHTML += data.username || '';
-            document.getElementById('email').innerHTML += data.email || '';
+            if (currentRfid !== data.rfid_tag) {
+                // Save the new RFID to localStorage before reloading
+                localStorage.setItem('currentRfid', data.rfid_tag);
+            } else {
+                // Update currentRfid and store it
+                currentRfid = data.rfid_tag;
+                localStorage.setItem('currentRfid', currentRfid);
+            }
+
+            document.getElementById('rfid_tag').innerHTML = data.rfid_tag || '';
+            document.getElementById('username').innerHTML = data.username || '';
+            document.getElementById('email').innerHTML = data.email || '';
             document.getElementById('tempForm').value = data.temperature_threshold || '';
             document.getElementById('lightForm').value = data.lighting_intensity_threshold || '';
+            
         }
+        
     })
     .catch(error => {
         console.error('Error fetching user data:', error);
@@ -174,9 +186,7 @@ function autoPopulateForm() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    autoPopulateForm();
-});
+setInterval(autoPopulateForm, 2000);
 
 let bluetoothDevices = []; // To hold all the Bluetooth devices
         let currentIndex = 0; // To track the current set of devices to display
