@@ -1,11 +1,11 @@
-import RPi.GPIO as GPIO
-# import mock_gpio as GPIO #MOCK: simulate GPIO
+# import RPi.GPIO as GPIO
+import mock_gpio as GPIO #MOCK: simulate GPIO
 from gpiozero import DigitalOutputDevice
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import atexit
 import paho.mqtt.client as mqtt
-from Freenove_DHT import DHT
-# from mock_dht import DHT #MOCK: simulates DHT
+# from Freenove_DHT import DHT
+from mock_dht import DHT #MOCK: simulates DHT
 import smtplib
 from email.mime.text import MIMEText
 from threading import Thread
