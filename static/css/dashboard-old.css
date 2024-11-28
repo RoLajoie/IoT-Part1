@@ -1,0 +1,331 @@
+/* General styling */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: #f0f8ff;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    color: #333;
+    overflow: hidden;
+}
+
+.dashboard-container {
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    padding: 30px;
+    text-align: center;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    align-items: flex-start;
+}
+/* Styling for Bluetooth Devices Section */
+#bluetoothDevices {
+    background-color: #e3f2fd; /* Light blue background to match the light container */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+}
+
+/* Title for Bluetooth Devices */
+#bluetoothDevices h2 {
+    font-size: 24px;
+    color: #1e88e5; /* Matching the title color with other sections */
+    margin-bottom: 20px;
+}
+
+/* Device count styling */
+#device-count {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+/* List of Bluetooth devices */
+#device-list {
+    list-style-type: none;
+    padding: 0;
+    margin-bottom: 20px;
+    font-size: 16px;
+    color: #333;
+}
+
+#device-list li {
+    margin-bottom: 10px;
+    padding: 5px;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Button styling */
+#bluetoothDevices button {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+#bluetoothDevices button:hover {
+    background-color: #45a049;
+}
+
+/* Responsive Styling for smaller screens */
+@media (max-width: 600px) {
+    #bluetoothDevices {
+        padding: 15px;
+        width: 90%;
+    }
+
+    #device-count {
+        font-size: 16px;
+    }
+
+    #device-list li {
+        font-size: 14px;
+    }
+
+    #bluetoothDevices button {
+        width: 100%;
+        font-size: 18px;
+    }
+}
+
+/* Notifications Container */
+.notifications-container {
+    background-color: #e3f2fd; /* Light blue background to match the light container */
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 600px;
+}
+
+/* Notifications Heading */
+.notifications-container h3 {
+    font-size: 24px;
+    color: #1e88e5; /* Matching the title color with other sections */
+    margin-bottom: 10px;
+}
+
+/* Email Status Styling */
+#email-status {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 15px;
+    font-weight: 500;
+    text-align: center; /* Centers the status text */
+}
+
+/* Responsive Styling for smaller screens */
+@media (max-width: 600px) {
+    .notifications-container {
+        padding: 15px;
+        width: 90%;
+    }
+
+    #email-status {
+        font-size: 16px;
+    }
+}
+
+h1 {
+    font-size: 28px;
+    color: #1e88e5;
+    margin-bottom: 25px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Light container */
+.lightContainer {
+    background-color: #e3f2fd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.luminosity-container {
+    background-color: lightgray;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.fan-status-container {
+    background-color: rgb(190, 158, 158);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+#led-status {
+    font-size: 18px;
+    color: #1b5e20;
+    margin-bottom: 15px;
+}
+
+img {
+    width: 50px;
+    height: 50px;
+    margin: 10px 0;
+}
+
+img.lit {
+    filter: brightness(1.8);
+}
+
+img.dark {
+    opacity: 0.7;
+}
+
+/* Toggle switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 70px;
+    height: 34px;
+    margin-left: 10px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+    border-radius: 34px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #4caf50;
+}
+
+input:checked + .slider:before {
+    transform: translateX(36px);
+}
+
+/* Data container */
+.data-container {
+    background-color: #e8f5e9;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+    
+}
+
+#gauge {
+    width: 100%;
+    height: 150px;
+    margin: 15px 0;
+}
+
+#fan-status {
+    font-size: 16px;
+    color: #d32f2f;
+    margin-bottom: 15px;
+}
+
+img#fan-icon {
+    width: 50px;
+    height: 50px;
+}
+
+/* User Info Section */
+.userInfo {
+    background-color: #ede7f6;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.userInfo p {
+    margin: 10px; 
+    color:rgba(0, 0, 0, 1); 
+}
+
+.userInfo h2 {
+    font-size: 25px;
+    color: darkslateblue
+}
+
+.userInfo h1 {
+    font-size: 20px;
+    color: #6a1b9a;
+    margin-bottom: 15px;
+}
+
+.userInfo form label {
+    font-size: 14px;
+    color: #333;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.userInfo form input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    transition: border-color 0.3s;
+}
+
+.userInfo form input:focus {
+    border-color: #6a1b9a;
+}
+
+/* Footer */
+footer {
+    font-size: 12px;
+    color: #888;
+    margin-top: 20px;
+}

@@ -325,16 +325,17 @@ def read_dht_sensor():
 def monitor_temperature():
     global fan_state
     global email_sent
+    global current_user
     while True:
         humidity, temperature = read_dht_sensor()
         if temperature is not None:
             print(f"Temperature: {temperature}°C, Humidity: {humidity}%")
-            if temperature >= 24 and fan_state == 'OFF':
+            if temperature >= current_user["temperature_threshold"] and fan_state == 'OFF':
                 if email_sent == False:
                     send_email(temperature)
                     email_sent = True
                     fan_state = "ON"
-            elif temperature < 24 and fan_state == 'ON':
+            elif temperature < current_user["temperature_threshold"] and fan_state == 'ON':
                 fan_state = 'OFF'
                 GPIO.output(FAN_PIN, GPIO.LOW)
         time.sleep(3)
