@@ -4,6 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Home IoT Dashboard</title>
+    <script>
+        const flaskData = {
+            ledStatus: "{{ led_status }}",
+            lightEmailSent: "{{ light_email_sent }}",
+            fanStatus: "{{ fan_status }}",
+            fanSwitchOn: "{{ fan_switch_on }}",
+            fanSwitchOff: "{{ fan_switch_off }}",
+            fanEmailSent: "{{ fan_email_sent }}",
+        };
+
+</script>
     <script src="{{ url_for('static', filename='js/justgage-1.2.2/raphael-2.1.4.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/justgage-1.2.2/justgage.js') }}"></script>
     <script src="{{ url_for('static', filename='js/dashboardMQTT.js') }}"></script>
@@ -80,7 +91,8 @@
 
             <div class="card notifications-container">
                 <h3>Notifications</h3>
-                <p id="email-status">Lighting Email Sent: {{ light_email_sent }}</p>
+                <p id="email-status">Light Email Sent: {{ light_email_sent }}</p>
+                <p id="email-status">Fan Email Sent: {{ fan_email_sent }}</p>
             </div>
     </main>
     <footer class="dashboard-footer">

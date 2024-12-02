@@ -1,12 +1,17 @@
 let temperatureGauge;
 let humidityGauge;
 let luminosityGauge;
+let ledStatus = flaskData.ledStatus;
+let fanStatus = flaskData.fanStatus;
+let fanSwitchOn = flaskData.fanSwitchOn;
+let fanSwitchOff = flaskData.fanSwitchOff;
+let fanEmailSent = flaskData.fanEmailSent;
   
 window.onload = () => {
-    // TODO: if extra time, better to put a loader until there's info
     // Initialize everything first
     initializeGauges();
     fetchBluetoothDevices(); 
+    
     document.getElementById('toggle-switch').addEventListener('change', function() {
         let newState = this.checked ? 'ON' : 'OFF';
         fetch(`/toggle_led/${newState}`, {
@@ -18,12 +23,15 @@ window.onload = () => {
     });
 
     setInterval(() => {
-        fetchData(); 
-        fetchLightData();},
-        1000);
-    updateLED("{{ led_status }}");
-    updateFan("{{ fan_status }}");
-    };
+        fetchStates(); // Setting the updated states from backend to the frontend | CALL THIS FIRST
+        fetchData(); // DHT sensor data only, no effect on other variables
+        fetchLightData(); // Photoresistor data only, no effect on other variables
+        updateFan(); // Update UI and toggle backend
+    }, 1000);
+
+    setInterval(autoPopulateForm, 2000);
+    updateLED(ledStatus);
+};
 
 function initializeGauges() {
     temperatureGauge = new JustGage({
@@ -73,8 +81,6 @@ function fetchData() {
             if (data.temperature || data.temperature === 0) {
                 // Update the gauges with values
                 temperatureGauge.refresh(data.temperature);
-
-                updateFan("{{ fan_status }}", "{{ fan_switch_requested }}");
             }
             if (data.humidity || data.humidity === 0) {
                 // Update the gauges with values
@@ -99,6 +105,22 @@ function fetchLightData() {
         .catch(error => console.error('Error fetching sensor data:', error));
 }
 
+function fetchStates() {
+    fetch('/get_states')
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            if (data.fanEmailSent) fanEmailSent = data.fanEmailSent;
+            if (data.fanStatus) fanStatus = data.fanStatus;
+            if (data.fanSwitchOn) fanSwitchOn = data.fanSwitchOn;
+            if (data.fanSwitchOff) fanSwitchOff = data.fanSwitchOff;
+            if (data.ledStatus) ledStatus = data.ledStatus;
+        })
+        .catch(error => console.error('Error fetching states:', error));
+}
+
 function updateLED(ledStatus) {
     // Defining the variables
     const lightImage = document.getElementById('light-image');
@@ -107,28 +129,22 @@ function updateLED(ledStatus) {
     // Assigning the variables and displaying on the page
     toggleSwitch.checked = (ledStatus === 'ON');
     lightImage.src = (ledStatus === 'ON') ? ('/static/images/lit.png') : ('/static/images/dark.png');
-    // TODO: ideally would display only the passed info
-    // If not received yet, don't want to display "{{ led_status }}"
-    if (ledStatus === "{{ led_status }}") {
-        document.getElementById('led-status').textContent = "LED Status: OFF";
-    } else {
-        document.getElementById('led-status').textContent = "LED Status: " + ledStatus;
-    }
+    document.getElementById('led-status').textContent = "LED Status: " + ledStatus;
     lightImage.className = (ledStatus === 'ON') ? 'lit' : 'dark';
 }
 
 
-function updateFan(fanStatus, fanSwitchRequested) {
+function updateFan() {
+    fetch(`/toggle_fan/${fanStatus}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => fanStatus = data.fan_status);
+    
     const fanIcon = document.getElementById('fan-icon');
-
-    fanIcon.src = (fanStatus === 'ON' && fanSwitchRequested) ? ('/static/images/fan-on.webp') : ('/static/images/fan-off.webp');
-    // TODO: ideally would display only the passed info
-    // If not received yet, don't want to display "{{ fan_status }}"
-    if (fanStatus === "{{ fan_status }}") {
-        document.getElementById('fan-status').textContent = "Fan Status: OFF";
-    } else {
-        document.getElementById('fan-status').textContent = "Fan Status: " + fanStatus;
-    }
+    fanIcon.src = (fanStatus === 'ON' && fanSwitchOn) ? ('/static/images/fan-on.webp') : ('/static/images/fan-off.webp');
+    document.getElementById('fan-status').textContent = "Fan Status: " + fanStatus;
 }
 
 function checkEmailNotification() {
@@ -160,7 +176,6 @@ function autoPopulateForm() {
             console.error('Error fetching user data:', data.error);
             alert('Could not load user data: ' + data.error);
         } else {
-            console.log(data);
             // Populate form fields with fetched data
             if (currentRfid !== data.rfid_tag) {
                 // Save the new RFID to localStorage before reloading
@@ -182,70 +197,64 @@ function autoPopulateForm() {
     })
     .catch(error => {
         console.error('Error fetching user data:', error);
-        alert('An error occurred while populating page.');
     });
 }
 
-setInterval(autoPopulateForm, 2000);
-
 let bluetoothDevices = []; // To hold all the Bluetooth devices
-        let currentIndex = 0; // To track the current set of devices to display
+let currentIndex = 0; // To track the current set of devices to display
 
-        // Function to fetch Bluetooth devices from the Flask server
-        async function fetchBluetoothDevices() {
-            try {
-                const response = await fetch('/bluetooth_devices');
-                bluetoothDevices = await response.json();
+// Function to fetch Bluetooth devices from the Flask server
+async function fetchBluetoothDevices() {
+    try {
+        const response = await fetch('/bluetooth_devices');
+        bluetoothDevices = await response.json();
 
-                if (bluetoothDevices.length > 0) {
-                    displayBluetoothDevices();
-                    updateDeviceCount(); // Update the device count when devices are fetched
-                } else {
-                    const deviceList = document.getElementById('device-list');
-                    deviceList.innerHTML = '<li>No Bluetooth devices found.</li>';
-                    updateDeviceCount(); // Update the device count when no devices are found
-                }
-            } catch (error) {
-                console.error('Error fetching Bluetooth devices:', error);
-            }
-        }
-
-        // Function to display 4 devices at a time
-        function displayBluetoothDevices() {
-            const deviceList = document.getElementById('device-list');
-            deviceList.innerHTML = ''; // Clear the current list
-
-            // Slice the bluetoothDevices array to get 4 devices starting from the current index
-            const devicesToShow = bluetoothDevices.slice(currentIndex, currentIndex + 4);
-
-            // Populate the list with the sliced devices
-            devicesToShow.forEach(device => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `Name: ${device.name}, Address: ${device.address}`;
-                deviceList.appendChild(listItem);
-            });
-        }
-
-        // Function to update the device count
-        function updateDeviceCount() {
-            const deviceCountElement = document.getElementById('device-count');
-            deviceCountElement.textContent = `Total Bluetooth Devices: ${bluetoothDevices.length}`;
-        }
-
-        // Function to cycle through the devices
-        function cycleDevices() {
-            if (bluetoothDevices.length === 0) return; // No devices to cycle through
-
-            // Move to the next set of 4 devices
-            currentIndex = (currentIndex + 4) % bluetoothDevices.length;
-
-            // If we are past the last set, we start from the beginning
-            if (currentIndex >= bluetoothDevices.length) {
-                currentIndex = 0;
-            }
-
+        if (bluetoothDevices.length > 0) {
             displayBluetoothDevices();
+            updateDeviceCount(); // Update the device count when devices are fetched
+        } else {
+            const deviceList = document.getElementById('device-list');
+            deviceList.innerHTML = '<li>No Bluetooth devices found.</li>';
+            updateDeviceCount(); // Update the device count when no devices are found
         }
+    } catch (error) {
+        console.error('Error fetching Bluetooth devices:', error);
+    }
+}
 
+// Function to display 4 devices at a time
+function displayBluetoothDevices() {
+    const deviceList = document.getElementById('device-list');
+    deviceList.innerHTML = ''; // Clear the current list
 
+    // Slice the bluetoothDevices array to get 4 devices starting from the current index
+    const devicesToShow = bluetoothDevices.slice(currentIndex, currentIndex + 4);
 
+    // Populate the list with the sliced devices
+    devicesToShow.forEach(device => {
+        const listItem = document.createElement('li');
+        listItem.textContent = `Name: ${device.name}, Address: ${device.address}`;
+        deviceList.appendChild(listItem);
+    });
+}
+
+// Function to update the device count
+function updateDeviceCount() {
+    const deviceCountElement = document.getElementById('device-count');
+    deviceCountElement.textContent = `Total Bluetooth Devices: ${bluetoothDevices.length}`;
+}
+
+// Function to cycle through the devices
+function cycleDevices() {
+    if (bluetoothDevices.length === 0) return; // No devices to cycle through
+
+    // Move to the next set of 4 devices
+    currentIndex = (currentIndex + 4) % bluetoothDevices.length;
+
+    // If we are past the last set, we start from the beginning
+    if (currentIndex >= bluetoothDevices.length) {
+        currentIndex = 0;
+    }
+
+    displayBluetoothDevices();
+}

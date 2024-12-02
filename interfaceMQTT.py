@@ -1,11 +1,11 @@
-# import RPi.GPIO as GPIO
-import mock_gpio as GPIO #MOCK: simulate GPIO
+import RPi.GPIO as GPIO
+# import mock_gpio as GPIO #MOCK: simulate GPIO
 from gpiozero import DigitalOutputDevice
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import atexit
 import paho.mqtt.client as mqtt
-# from Freenove_DHT import DHT
-from mock_dht import DHT #MOCK: simulates DHT
+from Freenove_DHT import DHT
+# from mock_dht import DHT #MOCK: simulates DHT
 import smtplib
 from email.mime.text import MIMEText
 from threading import Thread
@@ -44,7 +44,7 @@ dht_sensor = DHT(DHT_PIN)
 
 # MQTT configuration
 MQTT_BROKER = '192.168.101.131'
-#MQTT_BROKER = 'localhost' # MOCK: localhost :)
+# MQTT_BROKER = 'localhost' # MOCK: localhost :)
 MQTT_TOPIC_LED = 'home/led'
 MQTT_TOPIC_FAN = 'home/fan'
 MQTT_TOPIC_LIGHT = 'home/light'
@@ -52,8 +52,9 @@ MQTT_TOPIC_RFID = 'home/rfid'
 # State machines for fan and friends
 led_state = 'OFF'
 fan_state = 'OFF'
-fan_switch_on = False
-email_sent = False
+fan_switch_on = False # used to tell the frontend when an email confirmation has been detected
+fan_switch_off = False # used to tell the frontend when the temperature drops back down
+fan_email_sent = False
 # Dynamic Light Related Variables
 light_intensity = 0
 light_email_sent = False
@@ -134,13 +135,13 @@ def update_user_preferences(rfid_tag, temp_threshold, light_threshold):
 # -------------------------------------------------------------------------------------------------------------------------->
 
 def send_email(temperature):
-    global email_sent
+    global fan_email_sent
     global current_user
-    if not email_sent:
+    if not fan_email_sent:
         msg = MIMEText(f"The current temperature is {temperature}°C. Would you like to turn on the fan?")
         msg['Subject'] = 'Temperature Alert'
-        msg['From'] = 'whatisiot1@gmail.com' 
-        msg['To'] = current_user['email'] 
+        msg['From'] = 'whatisiot1@gmail.com'
+        msg['To'] = current_user['email']
         # msg['To'] = 'levitind@gmail.com'
 
         
@@ -148,11 +149,12 @@ def send_email(temperature):
             server.starttls()
             server.login('whatisiot1@gmail.com', 'ayvi plyw mqzd vrtz')
             server.sendmail(msg['From'], [msg['To']], msg.as_string())
-        email_sent = True
+        fan_email_sent = True
         print('Email sent')
 
 def check_email_responses():
     global fan_switch_on
+    global fan_state
     while True:
         try:
             mail = imaplib.IMAP4_SSL("imap.gmail.com")
@@ -196,7 +198,9 @@ def check_email_responses():
                                 mail.store(email_id, '+FLAGS', '\\Deleted')
                                 mail.expunge()
                                 GPIO.output(FAN_PIN, GPIO.HIGH)
+                                # These two variables should always be set together
                                 fan_switch_on = True
+                                fan_state = 'ON'
 
             mail.logout()
             time.sleep(10)
@@ -245,7 +249,7 @@ imap_password = "ayvi plyw mqzd vrtz"
 app = Flask(__name__)
 
 def on_message(client, userdata, msg):
-    global light_intensity, light_email_sent, led_state, fan_state, fan_switch_on, email_sent, current_rfid
+    global light_intensity, light_email_sent, led_state, fan_state, fan_switch_on, fan_email_sent, current_rfid
 
     if msg.topic == MQTT_TOPIC_LIGHT:
         try:
@@ -274,11 +278,12 @@ def on_message(client, userdata, msg):
             if user:
                 global current_user
                 current_user = {
-                    'rfid_tag': user[0],
+                    'id': user[0],
                     'username': user[1],
                     'email': user[2],
-                    'temp_threshold': user[4],
-                    'light_threshold': user[5]
+                    'rid_tag': user[3],
+                    'temperature_threshold': user[4],
+                    'light_intensity_threshold': user[5]
                 }
             
                 print(f"Switched to preferences for user: {current_user['username']}")
@@ -288,8 +293,8 @@ def on_message(client, userdata, msg):
                 Hello {current_user['username']},
     
                 Your preferences have been successfully activated at {time}:
-                - Temperature Threshold: {current_user['temp_threshold']}°C
-                - Light Intensity Threshold: {current_user['light_threshold']} lumens
+                - Temperature Threshold: {current_user['temperature_threshold']}°C
+                - Light Intensity Threshold: {current_user['light_intensity_threshold']} lumens
     
                 Thank you,
                 Beep boop smart IoT system
@@ -336,19 +341,22 @@ def read_dht_sensor():
 # Function to monitor temperature and control fan
 def monitor_temperature():
     global fan_state
-    global email_sent
+    global fan_switch_off
+    global fan_email_sent
     global current_user
     while True:
         humidity, temperature = read_dht_sensor()
         if temperature is not None:
             print(f"Temperature: {temperature}°C, Humidity: {humidity}%")
-            if temperature >= current_user["temperature_threshold"] and fan_state == 'OFF':
-                if email_sent == False:
+            # if temperature >= current_user["temperature_threshold"] and fan_state == 'OFF':
+            if temperature >= 24 and fan_state == 'OFF':
+                if fan_email_sent == False:
                     send_email(temperature)
-                    email_sent = True
-                    fan_state = "ON"
-            elif temperature < current_user["temperature_threshold"] and fan_state == 'ON':
+                    fan_email_sent = True
+            # elif temperature < current_user["temperature_threshold"] and fan_state == 'ON':
+            elif temperature < 24 and fan_state == 'ON':
                 fan_state = 'OFF'
+                fan_switch_off = True # setting this so frontend knowns to turn fan off
                 GPIO.output(FAN_PIN, GPIO.LOW)
         time.sleep(3)
 
@@ -375,10 +383,12 @@ def setup():
 def index():
     return render_template(
         'dashboard.html', 
-        led_status=led_state, 
-        fan_status=fan_state, 
-        fan_switch_requested=fan_switch_on, 
-        light_email_sent=light_email_sent, 
+        led_status=led_state,
+        light_email_sent=light_email_sent,
+        fan_status=fan_state,
+        fan_switch_on=fan_switch_on,
+        fan_switch_off=fan_switch_off,
+        fan_email_sent=fan_email_sent,
         devices=bluetooth_devices,
         current_user=current_user  # Pass the current_user object to the template
     )
@@ -426,6 +436,12 @@ def light_data():
     else:
         return jsonify({'error': 'Could not retrieve sensor data'}), 500
 
+@app.route('/get_states')
+def get_states():
+    if led_state is not None and fan_state is not None and fan_switch_on is not None and fan_switch_off is not None and fan_email_sent is not None:
+        return jsonify({'ledStatus': led_state, 'fanStatus': fan_state, 'fanSwitchOn': fan_switch_on, 'fanSwitchOff': fan_switch_off, 'fanEmailSent': fan_email_sent})
+    else:
+        return jsonify({'error': 'Could not retrieve states'}), 500
 
 # Checking the email has been sent for the light
 @app.route('/check_email_notification')
@@ -444,18 +460,9 @@ def check_email_notification():
 @app.route('/fetch_user', methods=['POST'])
 def fetch_user():
     global current_user
-    # For mock RFID
-    # return jsonify({
-    #         'id': '83adf703',
-    #         'username': 'Maxim1',
-    #         'email': 'maximrotaru16@gmail.com',
-    #         'rfid_tag': '83adf703',
-    #         'temperature_threshold': 24,  
-    #         'lighting_intensity_threshold': 400,  
-    # })
     
-    ## THIS IS THE LINE THAT TRIES TO FIND RFID TAG GIVEN NEW INPUT 
-    ## rfid_tag = current_user['rfid_tag']; 
+    # THIS IS THE LINE THAT TRIES TO FIND RFID TAG GIVEN NEW INPUT 
+    # rfid_tag = current_user['rfid_tag']; 
     
     ## Line that populates currently 
     rfid_tag = request.json.get('rfid_tag')
