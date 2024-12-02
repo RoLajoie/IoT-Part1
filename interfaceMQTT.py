@@ -211,12 +211,12 @@ def check_email_responses():
 def send_light_email():
     global light_email_sent
     global current_user
-    
+    current_user = get_user(current_rfid)
     if not light_email_sent and 'email' in current_user:
         msg = MIMEText(f"Dark room detected. LED Light has been activated.")
         msg['Subject'] = 'LED Enabled'
         msg['From'] = 'whatisiot1@gmail.com'
-        msg['To'] = current_user['email']  # Send email to the current user
+        msg['To'] = current_user[2]  # Send email to the current user
         
         try:
             with smtplib.SMTP('smtp.gmail.com', 587) as server:
